@@ -132,7 +132,7 @@ fn test_push_flow() {
     nodes.insert(node_a_id,node::Node::new(node_a_id));
     nodes.insert(node_b_id, node::Node::new(node_b_id));
     let mut arc = arc::Arc::new(node_a_id, node_b_id, cost,
-                                     0, 1, &mut nodes);
+                                     1, 1, &mut nodes);
 
     // test
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 1);
@@ -153,20 +153,20 @@ fn test_shortest_path() {
     let mut network = Network::new();
     // add task 1
     network.add_node();
-    network.add_arc(2, 1, 0.0, 0, 1);
+    network.add_arc(2, 1, 0.0, 1, 1);
     // add task 2
     network.add_node();
-    network.add_arc(3, 1, 0.0, 0, 1);
+    network.add_arc(3, 1, 0.0, 1, 1);
     // add worker 1
     network.add_node();
-    network.add_arc(0, 4, 0.0, 0, 1);
-    network.add_arc(4, 2, 2.5, 0, 1);
-    network.add_arc(4, 3, 3.0, 0, 1);
+    network.add_arc(0, 4, 0.0, 1, 1);
+    network.add_arc(4, 2, 2.5, 1, 1);
+    network.add_arc(4, 3, 3.0, 1, 1);
     // add worker 2
     network.add_node();
-    network.add_arc(0, 5, 0.0, 0, 1);
-    network.add_arc(5, 2, 2.6, 0, 1);
-    network.add_arc(5, 3, 1.9, 0, 1);
+    network.add_arc(0, 5, 0.0, 1, 1);
+    network.add_arc(5, 2, 2.6, 1, 1);
+    network.add_arc(5, 3, 1.9, 1, 1);
 
     // test
     let mut path = network.find_shortest_path();

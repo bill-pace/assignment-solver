@@ -4,7 +4,10 @@ use crate::network::node::Node;
 /// An arc that connects two nodes in the network.
 /// Each arc tracks the ID numbers of the nodes where it starts and ends, the cost associated with
 /// pushing a single unit of flow down the arc, the lower and upper bounds on flow that must/can be
-/// pushed down the arc, and the current amount of flow down the arc.
+/// pushed down the arc, and the current amount of flow down the arc. Note that the lower flow bound
+/// actually represents the flow that must be present in that arc at the point when execution can
+/// move from the "satisfy minimum assignment" phase to the "assign all remaining workers" phase.
+///
 /// Arcs will need to modify their endpoint nodes when pushing flow, and therefore need mutable
 /// references to nodes. However, multiple arcs may connect to the same node, so the mutable
 /// references are passed as arguments from the network caller when needed, rather than stored in
@@ -51,7 +54,7 @@ impl Arc {
     /// change in the residual network are those that flow into the sink. Arcs that leave the sink
     /// can never be part of a path to the sink (else the path would include the sink more than once
     /// and therefore be a walk), so we do not actually need to change those values: arcs whose
-    /// residuals can actually impact the shortest path algorithm always have 0 min flow and 1 max.
+    /// residuals can actually impact the shortest path algorithm always have 1 max flow.
     fn invert(&mut self, nodes: &mut HashMap<usize, Node>) {
         // flip direction of arc
         self.cost = -self.cost;
