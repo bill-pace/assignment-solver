@@ -1,3 +1,4 @@
+use std::arch::x86_64::_mm_aeskeygenassist_si128;
 use std::collections::HashMap;
 
 mod node;
@@ -89,6 +90,13 @@ impl Network {
         path.reverse();
         path
     }
+
+    /// Get total distance of a path by adding the costs of each arc in the path.
+    fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
+        path.windows(2)
+            .map(|a| self.arcs.get(&(a[0], a[1])).unwrap().get_cost())
+            .sum()
+    }
 }
 
 #[test]
@@ -142,4 +150,5 @@ fn test_shortest_path() {
     assert_eq!(path.len(), 4);
     assert_eq!(*path.first().unwrap(), 0);
     assert_eq!(*path.last().unwrap(), 1);
+    assert_eq!(network.get_path_cost(&path), 1.9_f32);
 }
