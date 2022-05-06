@@ -21,8 +21,8 @@ struct Network {
 impl Network {
     /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
     /// 1.
-    fn new() -> Network {
-        let mut new_network = Network { num_nodes: 0, min_flow_satisfied: false,
+    pub fn new() -> Network {
+        let mut new_network = Network { num_nodes: 0, min_flow_satisfied: true,
                                         nodes: HashMap::new(), arcs: HashMap::new() };
         new_network.add_node();
         new_network.add_node();
@@ -36,6 +36,12 @@ impl Network {
         // end node is the sink, and cost is 0 because this arc does not connect workers to tasks
         self.add_arc(task_id, 1, 0.0,
                      min_workers, max_workers);
+        if min_workers > 0 {
+            // at least one task has a minimum number of required workers, so we need to split the
+            // min cost augmentation algorithm into two phases: first to meet the minima, then a
+            // second to assign remaining workers
+            self.min_flow_satisfied = false;
+        }
         task_id
     }
 
@@ -54,6 +60,12 @@ impl Network {
                          1, 1);
         }
         worker_id
+    }
+
+    /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
+    /// time.
+    pub fn find_min_cost_max_flow(&mut self) {
+
     }
 
     /// Create a new Node and add it to the network's HashMap of nodes.
@@ -152,6 +164,19 @@ impl Network {
             self.arcs.insert((node_pair[1], node_pair[0]), arc);
         }
     }
+
+    /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
+    /// task node IDs, this method will return -1 times the total cost of worker assignments, since
+    /// assigning a worker to a task involves negating the corresponding arc's cost.
+    fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
+        nodes.iter()
+             .map(|node| self.nodes.get(node).unwrap()
+                             .get_connections().iter()
+                             .map(|connected_node| self.arcs.get(&(*node, *connected_node))
+                                                       .unwrap().get_cost())
+                             .sum::<f32>())
+             .sum()
+    }
 }
 
 #[test]
@@ -202,4 +227,72 @@ fn test_shortest_path() {
         network.arcs.get(&(node_pair[0], node_pair[1]))
             .expect("Inverted arc not found in network!");
     }
+}
+
+#[test]
+fn test_min_cost_augmentation() {
+    // setup
+    let mut network = Network::new();
+    let mut task_ids = Vec::new();
+    let mut worker_ids = Vec::new();
+    task_ids.push(network.add_task(1, 2));
+    task_ids.push(network.add_task(2, 2));
+    task_ids.push(network.add_task(0, 2));
+    task_ids.push(network.add_task(2, 3));
+    task_ids.push(network.add_task(1, 2));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 3.0),
+                                             (task_ids[1], 4.0),
+                                             (task_ids[2], 1.5),
+                                             (task_ids[3], 1.5),
+                                             (task_ids[4], 5.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 4.0),
+                                             (task_ids[1], 3.0),
+                                             (task_ids[2], 6.0),
+                                             (task_ids[3], 2.0),
+                                             (task_ids[4], 1.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 2.0),
+                                             (task_ids[1], 5.0),
+                                             (task_ids[2], 4.0),
+                                             (task_ids[3], 1.0),
+                                             (task_ids[4], 3.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 3.0),
+                                             (task_ids[1], 5.0),
+                                             (task_ids[2], 1.0),
+                                             (task_ids[3], 4.0),
+                                             (task_ids[4], 0.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 1.0),
+                                             (task_ids[1], 4.0),
+                                             (task_ids[2], 2.0),
+                                             (task_ids[3], 3.0),
+                                             (task_ids[4], 5.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 5.0),
+                                             (task_ids[1], 3.0),
+                                             (task_ids[2], 1.0),
+                                             (task_ids[3], 4.0),
+                                             (task_ids[4], 2.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 1.0),
+                                             (task_ids[1], 3.0),
+                                             (task_ids[2], 5.0),
+                                             (task_ids[3], 4.0),
+                                             (task_ids[4], 2.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 4.0),
+                                             (task_ids[1], 3.0),
+                                             (task_ids[2], 5.0),
+                                             (task_ids[3], 1.0),
+                                             (task_ids[4], 2.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 5.0),
+                                             (task_ids[1], 2.0),
+                                             (task_ids[2], 3.0),
+                                             (task_ids[3], 4.0),
+                                             (task_ids[4], 1.0)]));
+    worker_ids.push(network.add_worker(&vec![(task_ids[0], 2.0),
+                                             (task_ids[1], 5.0),
+                                             (task_ids[2], 1.0),
+                                             (task_ids[3], 3.0),
+                                             (task_ids[4], 4.0)]));
+
+    // test
+    network.find_min_cost_max_flow();
+    let total_cost = network.get_cost_of_arcs_from_nodes(&task_ids);
+    assert_eq!(total_cost, 12.5_f32) // TODO: make better comparison of floating-point
 }
