@@ -14,6 +14,7 @@ mod arc;
 struct Network {
     num_nodes: usize,
     min_flow_satisfied: bool,
+    min_flow_amount: usize,
     nodes: HashMap<usize, node::Node>,
     arcs: HashMap<(usize, usize), arc::Arc>
 }
@@ -22,7 +23,7 @@ impl Network {
     /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
     /// 1.
     pub fn new() -> Network {
-        let mut new_network = Network { num_nodes: 0, min_flow_satisfied: true,
+        let mut new_network = Network { num_nodes: 0, min_flow_satisfied: true, min_flow_amount: 0,
                                         nodes: HashMap::new(), arcs: HashMap::new() };
         new_network.add_node();
         new_network.add_node();
@@ -41,6 +42,7 @@ impl Network {
             // min cost augmentation algorithm into two phases: first to meet the minima, then a
             // second to assign remaining workers
             self.min_flow_satisfied = false;
+            self.min_flow_amount += min_workers;
         }
         task_id
     }
