@@ -2,7 +2,8 @@
 //!
 //! This module contains definitions and implementations for the Network struct, as well as
 //! submodules for the Node and Arc structs. A network stores its constituent nodes and arcs in
-//! HashMaps keyed on the nodes' IDs,
+//! HashMaps keyed on the nodes' IDs, allowing the usize IDs to be used for access instead of
+//! keeping borrowed references alive longer than strictly necessary.
 
 use std::collections::HashMap;
 
