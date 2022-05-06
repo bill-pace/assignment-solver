@@ -3,6 +3,94 @@ use std::collections::HashMap;
 mod node;
 mod arc;
 
+struct Network {
+    num_nodes: usize,
+    nodes: HashMap<usize, node::Node>,
+    arcs: HashMap<(usize, usize), arc::Arc>
+}
+
+impl Network {
+    /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
+    /// 1.
+    fn new() -> Network {
+        let mut new_network = Network { num_nodes: 0, nodes: HashMap::new(), arcs: HashMap::new() };
+        new_network.add_node();
+        new_network.add_node();
+        new_network
+    }
+
+    /// Create a new Node and add it to the network's HashMap of nodes.
+    fn add_node(&mut self) {
+        let new_node = node::Node::new(self.num_nodes);
+        self.nodes.insert(self.num_nodes, new_node);
+        self.num_nodes += 1;
+    }
+
+    /// Create a new Arc and add it to the network's HashMap of arcs
+    fn add_arc(&mut self, start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
+               max_flow: usize) {
+        let new_arc = arc::Arc::new(start_node_id, end_node_id, cost, min_flow,
+                                         max_flow, &mut self.nodes);
+        self.arcs.insert((start_node_id, end_node_id), new_arc);
+    }
+
+    /// Find the shortest path from the network's source node to its sink node, using an adaptation
+    /// of the Bellman-Ford algorithm.
+    fn find_shortest_path(&self) -> Vec<usize> {
+        // Initialize vectors that represent the paths found so far - at start, we have found no
+        // paths, so no node has a found predecessor and all nodes are considered infinite distance
+        // from the source, except for the source itself. Node IDs are sequential usize that start
+        // from zero to enable using them as indices in these vectors.
+        let mut distances = vec![f32::INFINITY; self.num_nodes];
+        distances[0] = 0.0;
+        let mut predecessors: Vec<Option<usize>> = vec![None; self.num_nodes];
+
+        // search for shortest path, starting from the source
+        let mut nodes_updated = vec![0]; // stores ID numbers
+        while nodes_updated.len() > 0 {
+            let nodes_to_search_from = nodes_updated.clone();
+            nodes_updated.clear();
+
+            // for each node updated in the last iteration, see if any of its existing connections
+            // result in a shorter path to any other node than what's been found so far
+            for node_id in &nodes_to_search_from {
+                let node = self.nodes.get(&node_id).unwrap();
+                for connected_node_id in node.get_connections() {
+                    // calculate distances
+                    let cur_dist = distances[*connected_node_id];
+                    let dist_to_here = distances[*node_id];
+                    let dist_from_here =
+                        self.arcs.get(&(*node_id, *connected_node_id)).unwrap().get_cost();
+
+                    if dist_to_here + dist_from_here < cur_dist {
+                        // found a shorter path to the connected node
+                        distances[*connected_node_id] = dist_to_here + dist_from_here;
+                        predecessors[*connected_node_id] = Some(node_id.clone());
+                        nodes_updated.push(connected_node_id.clone());
+                    }
+                }
+            }
+        }
+
+        // if no path to sink found, panic
+        predecessors[1].expect("No path found to sink node!");
+
+        // construct path backwards
+        let mut path = vec![1];
+        while let Some(node_id) = predecessors[*path.last().unwrap()] {
+            path.push(node_id);
+        }
+
+        // confirm the last node found was the source
+        if !(*path.last().unwrap() == 0) {
+            panic!("Path does not start at source!")
+        }
+
+        path.reverse();
+        path
+    }
+}
+
 #[test]
 fn test_push_flow() {
     // setup
@@ -26,4 +114,32 @@ fn test_push_flow() {
     assert_eq!(arc.get_cost(), -cost);
     assert_eq!(arc.get_start_node_id(), node_b_id);
     assert_eq!(arc.get_end_node_id(), node_a_id)
+}
+
+#[test]
+fn test_shortest_path() {
+    // setup
+    let mut network = Network::new();
+    // add task 1
+    network.add_node();
+    network.add_arc(2, 1, 0.0, 0, 1);
+    // add task 2
+    network.add_node();
+    network.add_arc(3, 1, 0.0, 0, 1);
+    // add worker 1
+    network.add_node();
+    network.add_arc(0, 4, 0.0, 0, 1);
+    network.add_arc(4, 2, 2.5, 0, 1);
+    network.add_arc(4, 3, 3.0, 0, 1);
+    // add worker 2
+    network.add_node();
+    network.add_arc(0, 5, 0.0, 0, 1);
+    network.add_arc(5, 2, 2.6, 0, 1);
+    network.add_arc(5, 3, 1.9, 0, 1);
+
+    // test
+    let path = network.find_shortest_path();
+    assert_eq!(path.len(), 4);
+    assert_eq!(*path.first().unwrap(), 0);
+    assert_eq!(*path.last().unwrap(), 1);
 }

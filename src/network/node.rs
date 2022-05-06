@@ -39,4 +39,9 @@ impl Node {
         let idx = self.connected_nodes.iter().position(|x| *x == node_id).unwrap();
         self.connected_nodes.swap_remove(idx);
     }
+
+    /// Returns a reference to the list of connected node IDs.
+    pub fn get_connections(&self) -> &Vec<usize> {
+        &self.connected_nodes
+    }
 }
