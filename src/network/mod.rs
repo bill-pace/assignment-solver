@@ -12,6 +12,7 @@ mod arc;
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 struct Network {
     num_nodes: usize,
+    min_flow_satisfied: bool,
     nodes: HashMap<usize, node::Node>,
     arcs: HashMap<(usize, usize), arc::Arc>
 }
@@ -20,7 +21,8 @@ impl Network {
     /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
     /// 1.
     fn new() -> Network {
-        let mut new_network = Network { num_nodes: 0, nodes: HashMap::new(), arcs: HashMap::new() };
+        let mut new_network = Network { num_nodes: 0, min_flow_satisfied: false,
+                                        nodes: HashMap::new(), arcs: HashMap::new() };
         new_network.add_node();
         new_network.add_node();
         new_network
@@ -116,7 +118,7 @@ impl Network {
     fn push_flow_down_path(&mut self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
             let mut arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
-            arc.push_flow(&mut self.nodes);
+            arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
             self.arcs.insert((node_pair[1], node_pair[0]), arc);
         }
     }
@@ -138,7 +140,7 @@ fn test_push_flow() {
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 1);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(nodes.get(&node_a_id).unwrap().get_first_connected_node_id(), Some(node_b_id));
-    arc.push_flow(&mut nodes);
+    arc.push_flow(false, &mut nodes);
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_num_connected_nodes(), 1);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_first_connected_node_id(), Some(node_a_id));
