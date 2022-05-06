@@ -26,4 +26,17 @@ impl Node {
             None
         }
     }
+
+    /// Create new connection
+    pub fn add_connection(&mut self, node_id: usize) {
+        if !self.connected_nodes.contains(&node_id) {
+            self.connected_nodes.push(node_id);
+        }
+    }
+
+    /// Remove existing connection. Assume that the connection can be listed only once.
+    pub fn remove_connection(&mut self, node_id: usize) {
+        let idx = self.connected_nodes.iter().position(|x| *x == node_id).unwrap();
+        self.connected_nodes.swap_remove(idx);
+    }
 }
