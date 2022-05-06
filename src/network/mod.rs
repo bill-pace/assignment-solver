@@ -1,8 +1,15 @@
+//! # Network
+//!
+//! This module contains definitions and implementations for the Network struct, as well as
+//! submodules for the Node and Arc structs. A network stores its constituent nodes and arcs in
+//! HashMaps keyed on the nodes' IDs,
+
 use std::collections::HashMap;
 
 mod node;
 mod arc;
 
+/// A Network is a collection of nodes and the arcs that connect those nodes.
 struct Network {
     num_nodes: usize,
     nodes: HashMap<usize, node::Node>,
@@ -78,8 +85,8 @@ impl Network {
         // if no path to sink found, or number of iterations exceeds number of nodes, there's a bug
         predecessors[1].expect("No path found to sink node!");
         if num_iterations >= self.num_nodes {
-            panic!("Negative cycle detected - this can't happen in the algorithm this code "
-                   "attempts to implement, so there must be a bug.");
+            panic!("Negative cycle detected - this can't happen in the algorithm this code \
+                   attempts to implement, so there must be a bug.");
         }
 
         // construct path backwards
@@ -100,8 +107,18 @@ impl Network {
     /// Get total distance of a path by adding the costs of each arc in the path.
     fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
         path.windows(2)
-            .map(|a| self.arcs.get(&(a[0], a[1])).unwrap().get_cost())
+            .map(|node_pair|
+                 self.arcs.get(&(node_pair[0], node_pair[1])).unwrap().get_cost())
             .sum()
+    }
+
+    /// Push flow down each arc in a path.
+    fn push_flow_down_path(&mut self, path: &Vec<usize>) {
+        for node_pair in path.windows(2) {
+            let mut arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
+            arc.push_flow(&mut self.nodes);
+            self.arcs.insert((node_pair[1], node_pair[0]), arc);
+        }
     }
 }
 
@@ -152,9 +169,15 @@ fn test_shortest_path() {
     network.add_arc(5, 3, 1.9, 0, 1);
 
     // test
-    let path = network.find_shortest_path();
+    let mut path = network.find_shortest_path();
     assert_eq!(path.len(), 4);
     assert_eq!(*path.first().unwrap(), 0);
     assert_eq!(*path.last().unwrap(), 1);
     assert_eq!(network.get_path_cost(&path), 1.9_f32);
+    network.push_flow_down_path(&path);
+    path.reverse();
+    for node_pair in path.windows(2) {
+        network.arcs.get(&(node_pair[0], node_pair[1]))
+            .expect("Inverted arc not found in network!");
+    }
 }
