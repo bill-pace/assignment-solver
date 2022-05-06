@@ -28,7 +28,7 @@ impl Network {
 
     /// Create a new Node and add it to the network's HashMap of nodes.
     fn add_node(&mut self) {
-        let new_node = node::Node::new(self.num_nodes);
+        let new_node = node::Node::new();
         self.nodes.insert(self.num_nodes, new_node);
         self.num_nodes += 1;
     }
@@ -129,8 +129,8 @@ fn test_push_flow() {
     let node_b_id = 63524657;
     let cost = 16.8;
     let mut nodes = HashMap::new();
-    nodes.insert(node_a_id,node::Node::new(node_a_id));
-    nodes.insert(node_b_id, node::Node::new(node_b_id));
+    nodes.insert(node_a_id,node::Node::new());
+    nodes.insert(node_b_id, node::Node::new());
     let mut arc = arc::Arc::new(node_a_id, node_b_id, cost,
                                      1, 1, &mut nodes);
 
