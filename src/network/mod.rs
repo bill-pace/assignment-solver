@@ -29,11 +29,40 @@ impl Network {
         new_network
     }
 
+    /// Add a new node to the network representing a task, and connect that node to the sink. Return
+    /// the task's ID number to look it back up after assignment is complete.
+    pub fn add_task(&mut self, min_workers: usize, max_workers: usize) -> usize {
+        let task_id = self.add_node();
+        // end node is the sink, and cost is 0 because this arc does not connect workers to tasks
+        self.add_arc(task_id, 1, 0.0,
+                     min_workers, max_workers);
+        task_id
+    }
+
+    /// Add a new node to the network representing a worker, connect the source to the new node, and
+    /// connect the new node to all tasks the worker can perform. As with add_task, return the
+    /// worker node's ID.
+    pub fn add_worker(&mut self, task_affinity: &Vec<(usize, f32)>) -> usize {
+        let worker_id = self.add_node();
+        // connect source to worker - no cost here, and each worker can be assigned exactly once so
+        // the flow bound is 1 for both phases of the min cost augmentation
+        self.add_arc(0, worker_id, 0.0, 1, 1);
+        // connect the worker to each task they can perform, using their affinity as the cost of the
+        // new arc - flow bound stays 1
+        for affinity in task_affinity {
+            self.add_arc(worker_id, affinity.0, affinity.1,
+                         1, 1);
+        }
+        worker_id
+    }
+
     /// Create a new Node and add it to the network's HashMap of nodes.
-    fn add_node(&mut self) {
+    fn add_node(&mut self) -> usize {
         let new_node = node::Node::new();
         self.nodes.insert(self.num_nodes, new_node);
+        let node_id = self.num_nodes;
         self.num_nodes += 1;
+        node_id
     }
 
     /// Create a new Arc and add it to the network's HashMap of arcs
@@ -154,22 +183,12 @@ fn test_push_flow() {
 fn test_shortest_path() {
     // setup
     let mut network = Network::new();
+    let mut task_ids = Vec::new();
     // add task 1
-    network.add_node();
-    network.add_arc(2, 1, 0.0, 1, 1);
-    // add task 2
-    network.add_node();
-    network.add_arc(3, 1, 0.0, 1, 1);
-    // add worker 1
-    network.add_node();
-    network.add_arc(0, 4, 0.0, 1, 1);
-    network.add_arc(4, 2, 2.5, 1, 1);
-    network.add_arc(4, 3, 3.0, 1, 1);
-    // add worker 2
-    network.add_node();
-    network.add_arc(0, 5, 0.0, 1, 1);
-    network.add_arc(5, 2, 2.6, 1, 1);
-    network.add_arc(5, 3, 1.9, 1, 1);
+    task_ids.push(network.add_task(1, 1));
+    task_ids.push(network.add_task(1, 1));
+    network.add_worker(&vec![(task_ids[0], 2.5_f32), (task_ids[0], 3.0_f32)]);
+    network.add_worker(&vec![(task_ids[0], 2.6_f32), (task_ids[0], 1.9_f32)]);
 
     // test
     let mut path = network.find_shortest_path();
