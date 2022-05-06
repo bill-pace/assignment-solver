@@ -2,7 +2,7 @@
 /// Each node has an ID number sequentially generated on construction, and a collection of other
 /// ID numbers corresponding to the nodes that it connects to via existing arcs. Note that since
 /// this network is directed, the connected nodes do not point back to this node.
-struct Node {
+pub struct Node {
     id: usize,
-    connected_nodes: vec<usize>,
+    connected_nodes: Vec<usize>,
 }
