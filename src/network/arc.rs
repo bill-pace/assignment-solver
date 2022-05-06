@@ -5,6 +5,10 @@ use crate::network::node::Node;
 /// Each arc tracks the ID numbers of the nodes where it starts and ends, the cost associated with
 /// pushing a single unit of flow down the arc, the lower and upper bounds on flow that must/can be
 /// pushed down the arc, and the current amount of flow down the arc.
+/// Arcs will need to modify their endpoint nodes when pushing flow, and therefore need mutable
+/// references to nodes. However, multiple arcs may connect to the same node, so the mutable
+/// references are passed as arguments from the network caller when needed, rather than stored in
+/// the arc.
 pub struct Arc {
     start_node: usize,
     end_node: usize,
@@ -16,7 +20,8 @@ pub struct Arc {
 
 impl Arc {
     /// Create a new Arc. The mutable reference to the HashMap of nodes is not stored within the
-    /// struct, and therefore dropped when the constructor returns.
+    /// struct, and therefore dropped when the constructor returns: this reference allows the arc to
+    /// tell its start node about the connection to its end node.
     pub fn new(start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
                max_flow: usize, nodes: &mut HashMap<usize, Node>) -> Arc {
         nodes.get_mut(&start_node_id).unwrap().add_connection(end_node_id);
@@ -28,7 +33,9 @@ impl Arc {
     /// network's representation up-to-date. We don't care to track residuals for any arc that has
     /// max flow greater than 1, because the only arcs that can have max flow greater than 1 in this
     /// network are those that touch the sink. Since we never push flow in a cycle, we will never
-    /// decrease the amount of flow in an arc that touches the sink.
+    /// decrease the amount of flow in an arc that touches the sink. The mutable reference to nodes
+    /// here is passed to Arc::invert, rather than directly used, and is dropped when the function
+    /// returns.
     pub fn push_flow(&mut self, nodes: &mut HashMap<usize, Node>) {
         self.current_flow += 1;
         if self.current_flow == self.max_flow {
@@ -37,7 +44,9 @@ impl Arc {
     }
 
     /// Invert this arc so the residual network's representation stays up-to-date: negate cost, find
-    /// new flow bounds, reset the current flow, and flip the start/end node IDs.
+    /// new flow bounds, reset the current flow, and flip the start/end node IDs. The mutable
+    /// reference to nodes here enables the nodes' connections to be updated as the arc flips
+    /// direction, and is dropped when the function returns.
     /// For the network in this particular problem, the only arcs whose flow bounds would need to
     /// change in the residual network are those that flow into the sink. Arcs that leave the sink
     /// can never be part of a path to the sink (else the path would include the sink more than once
