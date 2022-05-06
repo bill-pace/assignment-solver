@@ -46,9 +46,10 @@ impl Network {
         distances[0] = 0.0;
         let mut predecessors: Vec<Option<usize>> = vec![None; self.num_nodes];
 
-        // search for shortest path, starting from the source
+        // Search for shortest path, starting from the source.
         let mut nodes_updated = vec![0]; // stores ID numbers
-        while nodes_updated.len() > 0 {
+        let mut num_iterations = 0_usize;
+        while nodes_updated.len() > 0 && num_iterations < self.num_nodes {
             let nodes_to_search_from = nodes_updated.clone();
             nodes_updated.clear();
 
@@ -71,10 +72,16 @@ impl Network {
                     }
                 }
             }
+
+            num_iterations += 1;
         }
 
-        // if no path to sink found, panic
+        // if no path to sink found, or number of iterations exceeds number of nodes, there's a bug
         predecessors[1].expect("No path found to sink node!");
+        if num_iterations >= self.num_nodes {
+            panic!("Negative cycle detected - this can't happen in the algorithm this code "
+                   "attempts to implement, so there must be a bug.");
+        }
 
         // construct path backwards
         let mut path = vec![1];
