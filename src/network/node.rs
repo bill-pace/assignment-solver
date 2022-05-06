@@ -6,3 +6,24 @@ pub struct Node {
     id: usize,
     connected_nodes: Vec<usize>,
 }
+
+impl Node {
+    /// Create new Node with given ID
+    pub fn new(id: usize) -> Node {
+        Node { id, connected_nodes: Vec::new() }
+    }
+
+    /// Get number of connected nodes
+    pub fn get_num_connected_nodes(&self) -> usize {
+        self.connected_nodes.len()
+    }
+
+    /// Get ID of first connected node, if any
+    pub fn get_first_connected_node_id(&self) -> Option<usize> {
+        if self.connected_nodes.len() > 0 {
+            Some(self.connected_nodes[0])
+        } else {
+            None
+        }
+    }
+}
