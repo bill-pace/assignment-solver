@@ -22,7 +22,7 @@ fn test_push_flow() {
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_num_connected_nodes(), 1);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_first_connected_node_id(), Some(node_a_id));
-    // arc.cost
-    // arc.start_node
-    // arc.end_node
+    assert_eq!(arc.get_cost(), -16.8_f32);
+    assert_eq!(arc.get_start_node_id(), node_b_id);
+    assert_eq!(arc.get_end_node_id(), node_a_id)
 }

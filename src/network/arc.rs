@@ -55,4 +55,19 @@ impl Arc {
         self.start_node = self.end_node;
         self.end_node = temp_id;
     }
+
+    /// Get the arc's cost
+    pub fn get_cost(&self) -> f32 {
+        self.cost
+    }
+
+    /// Get the arc's start node id
+    pub fn get_start_node_id(&self) -> usize {
+        self.start_node
+    }
+
+    /// Get the arc's end node id
+    pub fn get_end_node_id(&self) -> usize {
+        self.end_node
+    }
 }
