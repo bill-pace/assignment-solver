@@ -18,13 +18,8 @@ impl Node {
     }
 
     /// Get ID of first connected node, if any
-    // TODO: use self.connected_nodes.first() instead
-    pub fn get_first_connected_node_id(&self) -> Option<usize> {
-        if self.connected_nodes.len() > 0 {
-            Some(self.connected_nodes[0])
-        } else {
-            None
-        }
+    pub fn get_first_connected_node_id(&self) -> Option<&usize> {
+        self.connected_nodes.first()
     }
 
     /// Create new connection

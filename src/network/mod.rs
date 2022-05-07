@@ -245,11 +245,13 @@ fn test_push_flow() {
     // test
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 1);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_num_connected_nodes(), 0);
-    assert_eq!(nodes.get(&node_a_id).unwrap().get_first_connected_node_id(), Some(node_b_id));
+    assert_eq!(*nodes.get(&node_a_id).unwrap().get_first_connected_node_id().unwrap(),
+               node_b_id);
     arc.push_flow(false, &mut nodes);
     assert_eq!(nodes.get(&node_a_id).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(nodes.get(&node_b_id).unwrap().get_num_connected_nodes(), 1);
-    assert_eq!(nodes.get(&node_b_id).unwrap().get_first_connected_node_id(), Some(node_a_id));
+    assert_eq!(*nodes.get(&node_b_id).unwrap().get_first_connected_node_id().unwrap(),
+               node_a_id);
     assert_eq!(arc.get_cost(), -cost);
     assert_eq!(arc.get_start_node_id(), node_b_id);
     assert_eq!(arc.get_end_node_id(), node_a_id)
