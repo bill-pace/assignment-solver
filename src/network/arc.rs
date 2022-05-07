@@ -96,7 +96,7 @@ impl Arc {
         self.end_node
     }
 
-    ///
+    /// Invert arc for second phase of min cost augmentation, unless it's already at capacity
     pub fn update_for_second_phase(&mut self, nodes: &mut HashMap<usize, Node>) -> bool {
         if self.min_flow == self.max_flow {
             // nothing to update - this arc is already at max capacity, too
