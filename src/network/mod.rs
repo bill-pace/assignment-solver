@@ -11,7 +11,7 @@ mod node;
 mod arc;
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
-struct Network {
+pub(crate) struct Network {
     num_nodes: usize,
     min_flow_satisfied: bool,
     min_flow_amount: usize,
