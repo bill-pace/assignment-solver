@@ -352,5 +352,5 @@ fn test_min_cost_augmentation() {
     network.find_min_cost_max_flow();
     let total_cost = -network.get_cost_of_arcs_from_nodes(&task_ids);
     assert_eq!(network.nodes.get(&0).unwrap().get_num_connected_nodes(), 0);
-    assert_eq!(total_cost, 12.5_f32) // TODO: make better comparison of floating-point
+    assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }
