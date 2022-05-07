@@ -190,7 +190,7 @@ impl Network {
     /// Push flow down each arc in a path.
     fn push_flow_down_path(&mut self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
-            let mut arc = self.arcs.get_mut(&(node_pair[0], node_pair[1])).unwrap();
+            let arc = self.arcs.get_mut(&(node_pair[0], node_pair[1])).unwrap();
             let arc_inverted = arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
             if arc_inverted {
                 let arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
@@ -217,9 +217,14 @@ impl Network {
     /// for each task. This method resets all arcs touching the sink to account for the
     /// corresponding changes in the residual network.
     fn reset_arcs_for_second_phase(&mut self) {
-        for connection in self.nodes.get(&1).unwrap().get_connections() {
-            let mut arc = self.arcs.get_mut(&(1, *connection)).unwrap();
-
+        let connections = self.nodes.get(&1).unwrap().get_connections().clone();
+        for connection in connections {
+            let arc = self.arcs.get_mut(&(1, connection)).unwrap();
+            let arc_inverted = arc.update_for_second_phase(&mut self.nodes);
+            if arc_inverted {
+                let arc = self.arcs.remove(&(1, connection)).unwrap();
+                self.arcs.insert((connection, 1), arc);
+            }
         }
     }
 }

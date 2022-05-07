@@ -70,7 +70,8 @@ impl Arc {
     fn invert(&mut self, nodes: &mut HashMap<usize, Node>) {
         // flip direction of arc
         self.cost = -self.cost;
-        self.current_flow = 0; // TODO: find actual current flow
+        self.current_flow = 0; // 0 is accurate for arcs that touch workers, and resetting this
+                               // value here doesn't matter for arcs that don't touch workers
 
         // update endpoints and pass info to the nodes
         nodes.get_mut(&self.start_node).unwrap().remove_connection(self.end_node);
@@ -93,6 +94,23 @@ impl Arc {
     /// Get the arc's end node id
     pub fn get_end_node_id(&self) -> usize {
         self.end_node
+    }
+
+    ///
+    pub fn update_for_second_phase(&mut self, nodes: &mut HashMap<usize, Node>) -> bool {
+        if self.min_flow != self.max_flow {
+            // invert arc's direction and notify the connected nodes
+            nodes.get_mut(&self.start_node).unwrap().remove_connection(self.end_node);
+            nodes.get_mut(&self.end_node).unwrap().add_connection(self.start_node);
+            let temp_id = self.start_node;
+            self.start_node = self.end_node;
+            self.end_node = temp_id;
+
+            // reset value of current flow to the arc's minimum flow
+            self.current_flow = self.min_flow;
+            return true;
+        }
+        false
     }
 }
 
