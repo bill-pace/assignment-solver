@@ -98,12 +98,13 @@ impl Arc {
 
     ///
     pub fn update_for_second_phase(&mut self, nodes: &mut HashMap<usize, Node>) -> bool {
-        if self.min_flow != self.max_flow {
-            self.invert(nodes);
-            self.current_flow = self.min_flow;
-            return true;
+        if self.min_flow == self.max_flow {
+            // nothing to update - this arc is already at max capacity, too
+            return false;
         }
-        false
+        self.invert(nodes);
+        self.current_flow = self.min_flow;
+        true
     }
 }
 
