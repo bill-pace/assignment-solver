@@ -79,7 +79,7 @@ impl Network {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             let path = self.find_shortest_path();
-            //println!("cost of path: {}", self.get_path_cost(&path));
+            println!("cost of path: {}", self.get_path_cost(&path));
 
             // path found, push flow and increment the amount of flow
             self.push_flow_down_path(&path);
@@ -196,7 +196,6 @@ impl Network {
                 let arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
                 self.arcs.insert((node_pair[1], node_pair[0]), arc);
             }
-            println!("inverting arc between {} and {}", node_pair[0], node_pair[1]);
         }
     }
 
@@ -270,7 +269,6 @@ fn test_shortest_path() {
     assert_eq!(*path.last().unwrap(), 1);
     assert_eq!(network.get_path_cost(&path), 1.9_f32);
     network.push_flow_down_path(&path);
-    print!("\n\n\n");
     path.reverse();
     for node_pair in path.windows(2) {
         network.arcs.get(&(node_pair[0], node_pair[1]))
@@ -345,5 +343,6 @@ fn test_min_cost_augmentation() {
     assert_eq!(network.arcs.len(), 65);
     network.find_min_cost_max_flow();
     let total_cost = network.get_cost_of_arcs_from_nodes(&task_ids);
+    assert_eq!(network.nodes.get(&0).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(total_cost, 12.5_f32) // TODO: make better comparison of floating-point
 }
