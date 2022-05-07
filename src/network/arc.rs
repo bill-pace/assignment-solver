@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use crate::network::node::Node;
 
 /// An arc that connects two nodes in the network.
@@ -12,6 +13,7 @@ use crate::network::node::Node;
 /// references to nodes. However, multiple arcs may connect to the same node, so the mutable
 /// references are passed as arguments from the network caller when needed, rather than stored in
 /// the arc.
+#[derive(Debug)]
 pub struct Arc {
     start_node: usize,
     end_node: usize,
@@ -64,7 +66,7 @@ impl Arc {
     fn invert(&mut self, nodes: &mut HashMap<usize, Node>) {
         // flip direction of arc
         self.cost = -self.cost;
-        self.current_flow = 0;
+        self.current_flow = 0; // TODO: find actual current flow
 
         // update endpoints and pass info to the nodes
         nodes.get_mut(&self.start_node).unwrap().remove_connection(self.end_node);
@@ -87,5 +89,13 @@ impl Arc {
     /// Get the arc's end node id
     pub fn get_end_node_id(&self) -> usize {
         self.end_node
+    }
+}
+
+impl fmt::Display for Arc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "start: {} end: {} cost: {} min: {} max: {} flow: {}",
+               self.start_node, self.end_node, self.cost,
+               self.min_flow, self.max_flow, self.current_flow)
     }
 }
