@@ -190,16 +190,14 @@ impl Network {
     /// Push flow down each arc in a path.
     fn push_flow_down_path(&mut self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
-            let mut arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
-            arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
-            self.arcs.insert((node_pair[1], node_pair[0]), arc);
+            let mut arc = self.arcs.get_mut(&(node_pair[0], node_pair[1])).unwrap();
+            let arc_inverted = arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
+            if arc_inverted {
+                let arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
+                self.arcs.insert((node_pair[1], node_pair[0]), arc);
+            }
+            println!("inverting arc between {} and {}", node_pair[0], node_pair[1]);
         }
-
-        // println!("current status of arcs:");
-        // for arc in self.arcs.values() {
-        //     println!("{}", arc);
-        // }
-        // print!("\n\n\n\n\n");
     }
 
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
@@ -272,6 +270,7 @@ fn test_shortest_path() {
     assert_eq!(*path.last().unwrap(), 1);
     assert_eq!(network.get_path_cost(&path), 1.9_f32);
     network.push_flow_down_path(&path);
+    print!("\n\n\n");
     path.reverse();
     for node_pair in path.windows(2) {
         network.arcs.get(&(node_pair[0], node_pair[1]))

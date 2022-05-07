@@ -41,17 +41,21 @@ impl Arc {
     /// decrease the amount of flow in an arc that touches the sink. The mutable reference to nodes
     /// here is passed to Arc::invert, rather than directly used, and is dropped when the function
     /// returns.
-    pub fn push_flow(&mut self, min_flow_satisfied: bool, nodes: &mut HashMap<usize, Node>) {
+    pub fn push_flow(&mut self, min_flow_satisfied: bool, nodes: &mut HashMap<usize, Node>)
+        -> bool {
         self.current_flow += 1;
         if min_flow_satisfied {
             if self.current_flow == self.max_flow {
                 self.invert(nodes);
+                return true;
             }
         } else {
             if self.current_flow == self.min_flow {
                 self.invert(nodes);
+                return true;
             }
         }
+        false
     }
 
     /// Invert this arc so the residual network's representation stays up-to-date: negate cost, find
