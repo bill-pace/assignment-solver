@@ -5,7 +5,7 @@
 //! HashMaps keyed on the nodes' IDs, allowing the usize IDs to be used for access instead of
 //! keeping borrowed references alive longer than strictly necessary.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 mod node;
 mod arc;
@@ -119,12 +119,12 @@ impl Network {
         let mut predecessors: Vec<Option<usize>> = vec![None; self.num_nodes];
 
         // Search for shortest path, starting from the source.
-        let mut nodes_updated = vec![0]; // stores ID numbers
+        let mut nodes_updated = HashSet::new(); // stores ID numbers; HashSet to
+                                                             // prevent duplicate entries
+        nodes_updated.insert(0);
         let mut num_iterations = 0_usize;
         while nodes_updated.len() > 0 && num_iterations < self.num_nodes {
-            // omit the sink, since it can only show up as the last node in any given path
-            nodes_updated.retain(|x| *x != 1);
-            let nodes_to_search_from = nodes_updated.clone(); // TODO: dedup?
+            let nodes_to_search_from = nodes_updated.clone();
             nodes_updated.clear();
 
             // for each node updated in the last iteration, see if any of its existing connections
@@ -148,7 +148,13 @@ impl Network {
                         // found a shorter path to the connected node
                         distances[*connected_node_id] = dist_to_here + dist_from_here;
                         predecessors[*connected_node_id] = Some(node_id.clone());
-                        nodes_updated.push(connected_node_id.clone());
+                        if *connected_node_id != 1 {
+                            // omit arcs leaving the sink, as these arcs cannot be part of a path to
+                            // the sink (else it would be a walk instead of a path) and their
+                            // representation within the code is an imperfect mirror of the residual
+                            // network for the sake of keeping their data in memory
+                            nodes_updated.insert(connected_node_id.clone());
+                        }
                     }
                 }
             }
