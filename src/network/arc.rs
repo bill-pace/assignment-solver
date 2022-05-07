@@ -102,6 +102,7 @@ impl Arc {
             // nothing to update - this arc is already at max capacity, too
             return false;
         }
+
         self.invert(nodes);
         self.current_flow = self.min_flow;
         true

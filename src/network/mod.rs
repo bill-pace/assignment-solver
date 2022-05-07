@@ -79,7 +79,6 @@ impl Network {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             let path = self.find_shortest_path();
-            println!("cost of path: {}", self.get_path_cost(&path));
 
             // path found, push flow and increment the amount of flow
             self.push_flow_down_path(&path);
@@ -123,7 +122,9 @@ impl Network {
         let mut nodes_updated = vec![0]; // stores ID numbers
         let mut num_iterations = 0_usize;
         while nodes_updated.len() > 0 && num_iterations < self.num_nodes {
-            let nodes_to_search_from = nodes_updated.clone();
+            // omit the sink, since it can only show up as the last node in any given path
+            nodes_updated.retain(|x| *x != 1);
+            let nodes_to_search_from = nodes_updated.clone(); // TODO: dedup?
             nodes_updated.clear();
 
             // for each node updated in the last iteration, see if any of its existing connections
@@ -347,7 +348,7 @@ fn test_min_cost_augmentation() {
     assert_eq!(network.nodes.len(), 17);
     assert_eq!(network.arcs.len(), 65);
     network.find_min_cost_max_flow();
-    let total_cost = network.get_cost_of_arcs_from_nodes(&task_ids);
+    let total_cost = -network.get_cost_of_arcs_from_nodes(&task_ids);
     assert_eq!(network.nodes.get(&0).unwrap().get_num_connected_nodes(), 0);
     assert_eq!(total_cost, 12.5_f32) // TODO: make better comparison of floating-point
 }
