@@ -99,14 +99,7 @@ impl Arc {
     ///
     pub fn update_for_second_phase(&mut self, nodes: &mut HashMap<usize, Node>) -> bool {
         if self.min_flow != self.max_flow {
-            // invert arc's direction and notify the connected nodes
-            nodes.get_mut(&self.start_node).unwrap().remove_connection(self.end_node);
-            nodes.get_mut(&self.end_node).unwrap().add_connection(self.start_node);
-            let temp_id = self.start_node;
-            self.start_node = self.end_node;
-            self.end_node = temp_id;
-
-            // reset value of current flow to the arc's minimum flow
+            self.invert(nodes);
             self.current_flow = self.min_flow;
             return true;
         }
