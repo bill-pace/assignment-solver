@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::zip;
@@ -21,10 +19,10 @@ use crate::network::Network;
 ///     Worker 2 Name | Task 1 Affinity | Task 2 Affinity | Task 3 Affinity | ...
 ///     --------------|-----------------|-----------------|-----------------|----
 ///     ...
-/// Task minima and maxima must be nonnegative integers, and setting the max to 0 will be treated as
-/// 0 rather than as infinite. Affinities can be any 32-bit floating-point value, including negative
-/// numbers, and if left blank will represent an unacceptable assignment (e.g. the worker cannot do
-/// the corresponding task).
+/// Task minima and maxima must be non-negative integers, and setting the max to 0 will be treated
+/// as 0 rather than as infinite. Affinities can be any 32-bit floating-point value, including
+/// negative numbers, and if left blank will represent an unacceptable assignment (e.g. the worker
+/// cannot do the corresponding task).
 pub struct CsvReader {
     tasks: Vec<(usize, String)>,
     workers: Vec<(usize, String)>
