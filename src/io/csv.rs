@@ -69,10 +69,17 @@ impl CsvReader {
 
     fn process_tasks(&mut self, network: &mut Network, task_names: String, task_minima: String,
                      task_maxima: String) -> std::io::Result<()> {
-        // TODO: handle missing info
-        for task_info in zip(task_names.split(","),
-                             zip(task_minima.split(","), task_maxima.split(",")))
-            .skip(1) {
+        let names = task_names.split(",").collect::<Vec<&str>>();
+        let minima = task_minima.split(",").collect::<Vec<&str>>();
+        let maxima = task_maxima.split(",").collect::<Vec<&str>>();
+        if names.len() != minima.len() || names.len() != maxima.len() {
+            // mismatched input sizes imply either missing or extra data and thus bad input format
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
+                                           "Mismatched input data for tasks: each task must have both a minimum \
+                                             and a maximum number of workers specified."));
+        }
+
+        for task_info in zip(names, zip(minima, maxima)).skip(1) {
             let minimum = match usize::from_str(task_info.1.0.trim()) {
                 Ok(m) => m,
                 Err(err) =>
@@ -179,4 +186,11 @@ fn test_read_errors() {
     assert!(net4.is_err());
     assert_eq!(net4.err().unwrap().to_string(),
                r#"Expected numeric value for worker affinity, found "c"; error: invalid float literal"#);
+
+    let mut file_reader5 = CsvReader::new();
+    let net5 = file_reader5.read_file("src/io/test-data/inputExtraData.csv");
+    assert!(net5.is_err());
+    assert_eq!(net5.err().unwrap().to_string(),
+               "Mismatched input data for tasks: each task must have both a minimum and a maximum \
+                number of workers specified.");
 }
