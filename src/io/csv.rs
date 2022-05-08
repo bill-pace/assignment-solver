@@ -26,14 +26,13 @@ use crate::network::Network;
 /// numbers, and if left blank will represent an unacceptable assignment (e.g. the worker cannot do
 /// the corresponding task).
 pub struct CsvReader {
-    // TODO: make these vectors of tuples to preserve ordering
-    tasks: HashMap<usize, String>,
-    workers: HashMap<usize, String>
+    tasks: Vec<(usize, String)>,
+    workers: Vec<(usize, String)>
 }
 
 impl CsvReader {
     pub fn new() -> CsvReader {
-        CsvReader { tasks: HashMap::new(), workers: HashMap::new() }
+        CsvReader { tasks: Vec::new(), workers: Vec::new() }
     }
 
     fn process_file<R>(&mut self, reader: R) -> std::io::Result<Network>
@@ -91,7 +90,7 @@ impl CsvReader {
                                                            task_info.1.1, err)))
             };
             let task_id = network.add_task(minimum, maximum);
-            self.tasks.insert(task_id, task_info.0.trim().to_string());
+            self.tasks.push((task_id, task_info.0.trim().to_string()));
         }
         Ok(())
     }
@@ -102,8 +101,7 @@ impl CsvReader {
         let mut info = worker_info.split(",");
         let worker_name = info.next().unwrap().trim().to_string();
 
-        let mut task_id = 2_usize; // 0 is source, 1 is sink, so for n tasks,
-                                         // task IDs are 2..(n+1)
+        let mut task_idx = 0;
         while let Some(val) = info.next() {
             if val != "" {
                 let aff = match f32::from_str(val) {
@@ -111,13 +109,13 @@ impl CsvReader {
                     Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
                         format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#, val, err)))
                 };
-                affinities.push((task_id, aff));
+                affinities.push((self.tasks[task_idx].0, aff)); // task ID stored in self.tasks
             }
-            task_id += 1;
+            task_idx += 1;
         }
 
         let worker_id = network.add_worker(&affinities);
-        self.workers.insert(worker_id, worker_name);
+        self.workers.push((worker_id, worker_name));
         Ok(())
     }
 }
@@ -151,8 +149,8 @@ fn test_read() {
     let mut network = file_reader.read_file("src/io/test-data/testInput.csv").unwrap();
     network.find_min_cost_max_flow();
     let total_cost =
-        -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.keys()
-                                                                     .map(|k| k.clone())
+        -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.iter()
+                                                                     .map(|t| t.0)
                                                                      .collect());
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }
