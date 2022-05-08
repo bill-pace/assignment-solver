@@ -209,7 +209,7 @@ impl Network {
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
     /// task node IDs, this method will return -1 times the total cost of worker assignments, since
     /// assigning a worker to a task involves negating the corresponding arc's cost.
-    fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
+    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
         nodes.iter()
              .map(|node| self.nodes.get(node).unwrap()
                              .get_connections().iter()
