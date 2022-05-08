@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::zip;
@@ -156,4 +157,30 @@ fn test_read() {
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }
 
-// TODO: test error detection in bad input files
+#[test]
+fn test_read_errors() {
+    let mut file_reader1 = CsvReader::new();
+    let net1 = file_reader1.read_file("src/io/test-data/inputEmpty.csv");
+    assert!(net1.is_err());
+    let net1_err = net1.err().unwrap();
+    assert_eq!(net1_err.kind(), std::io::ErrorKind::InvalidData);
+    assert_eq!(net1_err.to_string(), "Empty input file!");
+
+    let mut file_reader2 = CsvReader::new();
+    let net2 = file_reader2.read_file("src/io/test-data/inputBadMin.csv");
+    assert!(net2.is_err());
+    assert_eq!(net2.err().unwrap().to_string(),
+               r#"Expected integer minimum, found "a"; error: invalid digit found in string"#);
+
+    let mut file_reader3 = CsvReader::new();
+    let net3 = file_reader3.read_file("src/io/test-data/inputBadMax.csv");
+    assert!(net3.is_err());
+    assert_eq!(net3.err().unwrap().to_string(),
+               r#"Expected integer maximum, found "b"; error: invalid digit found in string"#);
+
+    let mut file_reader4 = CsvReader::new();
+    let net4 = file_reader4.read_file("src/io/test-data/inputBadAffinity.csv");
+    assert!(net4.is_err());
+    assert_eq!(net4.err().unwrap().to_string(),
+               r#"Expected numeric value for worker affinity, found "c"; error: invalid float literal"#);
+}
