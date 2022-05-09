@@ -106,17 +106,21 @@ impl CsvReader {
         let mut info = worker_info.split(",");
         let worker_name = info.next().unwrap().trim().to_string();
 
-        let mut task_idx = 0;
-        while let Some(val) = info.next() {
+        for task_id in self.tasks.iter().map(|t| t.0) {
+            let val = match info.next() {
+                Some(v) => v,
+                None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
+                format!("Too few task affinities for worker {}!", worker_name)))
+            };
+
             if val != "" {
                 let aff = match f32::from_str(val) {
                     Ok(v) => v,
                     Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
-                        format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#, val, err)))
+                                                               format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#, val, err)))
                 };
-                affinities.push((self.tasks[task_idx].0, aff)); // task ID stored in self.tasks
+                affinities.push((task_id, aff)); // task ID stored in self.tasks
             }
-            task_idx += 1;
         }
 
         let worker_id = network.add_worker(&affinities);
@@ -193,4 +197,10 @@ fn test_read_errors() {
     assert_eq!(net5.err().unwrap().to_string(),
                "Mismatched input data for tasks: each task must have both a minimum and a maximum \
                 number of workers specified.");
+
+    let mut file_reader6 = CsvReader::new();
+    let net6 = file_reader6.read_file("src/io/test-data/inputExtraAffinity.csv");
+    assert!(net6.is_err());
+    assert_eq!(net6.err().unwrap().to_string(),
+               "Too few task affinities for worker Gina!");
 }
