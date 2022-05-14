@@ -104,7 +104,7 @@ impl Network {
     fn add_arc(&mut self, start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
                max_flow: usize) {
         let new_arc = arc::Arc::new(start_node_id, end_node_id, cost, min_flow,
-                                         max_flow, &mut self.nodes);
+                                         max_flow, &self.nodes);
         self.arcs.insert((start_node_id, end_node_id), new_arc);
     }
 
@@ -133,27 +133,27 @@ impl Network {
                 let node = &self.nodes[*node_id];
                 for connected_node_id in node.get_connections() {
                     // calculate distances
-                    let cur_dist = distances[*connected_node_id];
+                    let cur_dist = distances[connected_node_id];
                     let dist_to_here = distances[*node_id];
                     let dist_from_here =
-                        match self.arcs.get(&(*node_id, *connected_node_id)) {
+                        match self.arcs.get(&(*node_id, connected_node_id)) {
                             Some(arc) => arc.get_cost(),
                             None => {
                                 panic!("Could not find arc from {} to {}!",
-                                       *node_id, *connected_node_id);
+                                       *node_id, connected_node_id);
                             }
                         };
 
                     if dist_to_here + dist_from_here < cur_dist {
                         // found a shorter path to the connected node
-                        distances[*connected_node_id] = dist_to_here + dist_from_here;
-                        predecessors[*connected_node_id] = Some(node_id.clone());
-                        if *connected_node_id != 1 {
+                        distances[connected_node_id] = dist_to_here + dist_from_here;
+                        predecessors[connected_node_id] = Some(node_id.clone());
+                        if connected_node_id != 1 {
                             // omit arcs leaving the sink, as these arcs cannot be part of a path to
                             // the sink (else it would be a walk instead of a path) and their
                             // representation within the code is an imperfect mirror of the residual
                             // network for the sake of keeping their data in memory
-                            nodes_updated.push(*connected_node_id);
+                            nodes_updated.push(connected_node_id);
                         }
                     }
                 }
@@ -201,7 +201,7 @@ impl Network {
     fn push_flow_down_path(&mut self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
             let arc = self.arcs.get(&(node_pair[0], node_pair[1])).unwrap();
-            let arc_inverted = arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
+            let arc_inverted = arc.push_flow(self.min_flow_satisfied, &self.nodes);
             if arc_inverted {
                 let arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
                 self.arcs.insert((node_pair[1], node_pair[0]), arc);
@@ -230,7 +230,7 @@ impl Network {
         let connections = self.nodes[1].get_connections().clone();
         for connection in connections {
             let arc = self.arcs.get(&(1, connection)).unwrap();
-            let arc_inverted = arc.update_for_second_phase(&mut self.nodes);
+            let arc_inverted = arc.update_for_second_phase(&self.nodes);
             if arc_inverted {
                 let arc = self.arcs.remove(&(1, connection)).unwrap();
                 self.arcs.insert((connection, 1), arc);
@@ -249,17 +249,17 @@ fn test_push_flow() {
     nodes.push(node::Node::new());
     nodes.push(node::Node::new());
     let arc = arc::Arc::new(node_a_id, node_b_id, cost,
-                                     1, 1, &mut nodes);
+                                     1, 1, &nodes);
 
     // test
     assert_eq!(nodes[node_a_id].get_num_connected_nodes(), 1);
     assert_eq!(nodes[node_b_id].get_num_connected_nodes(), 0);
-    assert_eq!(*nodes[node_a_id].get_first_connected_node_id().unwrap(),
+    assert_eq!(nodes[node_a_id].get_first_connected_node_id().unwrap(),
                node_b_id);
-    arc.push_flow(false, &mut nodes);
+    arc.push_flow(false, &nodes);
     assert_eq!(nodes[node_a_id].get_num_connected_nodes(), 0);
     assert_eq!(nodes[node_b_id].get_num_connected_nodes(), 1);
-    assert_eq!(*nodes[node_b_id].get_first_connected_node_id().unwrap(),
+    assert_eq!(nodes[node_b_id].get_first_connected_node_id().unwrap(),
                node_a_id);
     assert_eq!(arc.get_cost(), -cost);
     assert_eq!(arc.get_start_node_id(), node_b_id);

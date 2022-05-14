@@ -28,7 +28,7 @@ impl Arc {
     /// struct, and therefore dropped when the constructor returns: this reference allows the arc to
     /// tell its start node about the connection to its end node.
     pub fn new(start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
-               max_flow: usize, nodes: &mut Vec<Node>) -> Arc {
+               max_flow: usize, nodes: &Vec<Node>) -> Arc {
         nodes[start_node_id].add_connection(end_node_id);
         Arc { start_node: Cell::new(start_node_id), end_node: Cell::new(end_node_id),
               cost: Cell::new(cost), min_flow, max_flow, current_flow: Cell::new(0) }
@@ -41,7 +41,7 @@ impl Arc {
     /// decrease the amount of flow in an arc that touches the sink. The mutable reference to nodes
     /// here is passed to Arc::invert, rather than directly used, and is dropped when the function
     /// returns.
-    pub fn push_flow(&self, min_flow_satisfied: bool, nodes: &mut Vec<Node>) -> bool {
+    pub fn push_flow(&self, min_flow_satisfied: bool, nodes: &Vec<Node>) -> bool {
         self.current_flow.set(self.current_flow.get() + 1);
         if min_flow_satisfied {
             if self.current_flow.get() == self.max_flow {
@@ -66,7 +66,7 @@ impl Arc {
     /// can never be part of a path to the sink (else the path would include the sink more than once
     /// and therefore be a walk), so we do not actually need to change those values: arcs whose
     /// residuals can actually impact the shortest path algorithm always have 1 max flow.
-    fn invert(&self, nodes: &mut Vec<Node>) {
+    fn invert(&self, nodes: &Vec<Node>) {
         // flip direction of arc
         self.cost.set(-self.cost.get());
         self.current_flow.set(0); // 0 is accurate for arcs that touch workers, and resetting
@@ -96,7 +96,7 @@ impl Arc {
     }
 
     /// Invert arc for second phase of min cost augmentation, unless it's already at capacity
-    pub fn update_for_second_phase(&self, nodes: &mut Vec<Node>) -> bool {
+    pub fn update_for_second_phase(&self, nodes: &Vec<Node>) -> bool {
         if self.min_flow == self.max_flow {
             // nothing to update - this arc is already at max capacity, too
             return false;
