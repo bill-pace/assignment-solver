@@ -5,7 +5,7 @@
 //! HashMaps keyed on the nodes' IDs, allowing the usize IDs to be used for access instead of
 //! keeping borrowed references alive longer than strictly necessary.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 mod node;
 mod arc;
@@ -119,9 +119,8 @@ impl Network {
         let mut predecessors: Vec<Option<usize>> = vec![None; self.num_nodes];
 
         // Search for shortest path, starting from the source.
-        let mut nodes_updated = HashSet::new(); // stores ID numbers; HashSet to
-                                                             // prevent duplicate entries
-        nodes_updated.insert(0);
+        let mut nodes_updated = Vec::new(); // stores ID numbers
+        nodes_updated.push(0);
         let mut num_iterations = 0_usize;
         while nodes_updated.len() > 0 && num_iterations < self.num_nodes {
             let nodes_to_search_from = nodes_updated.clone();
@@ -153,13 +152,16 @@ impl Network {
                             // the sink (else it would be a walk instead of a path) and their
                             // representation within the code is an imperfect mirror of the residual
                             // network for the sake of keeping their data in memory
-                            nodes_updated.insert(connected_node_id.clone());
+                            nodes_updated.push(*connected_node_id);
                         }
                     }
                 }
             }
 
             num_iterations += 1;
+            // eliminate duplicated entries to make sure we only search once before an update
+            nodes_updated.sort();
+            nodes_updated.dedup();
         }
 
         // if no path to sink found, or number of iterations exceeds number of nodes, there's a bug
