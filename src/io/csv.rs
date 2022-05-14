@@ -147,7 +147,7 @@ impl CsvWriter {
 }
 
 impl Writer for CsvWriter {
-    fn write_file(results: &Network) -> std::io::Result<()> {
+    fn write_file(results: &Network, filename: &str) -> std::io::Result<()> {
         Ok(())
     }
 }
@@ -165,42 +165,57 @@ fn test_read() {
 }
 
 #[test]
-fn test_read_errors() {
-    let mut file_reader1 = CsvReader::new();
-    let net1 = file_reader1.read_file("src/io/test-data/inputEmpty.csv");
-    assert!(net1.is_err());
-    let net1_err = net1.err().unwrap();
-    assert_eq!(net1_err.kind(), std::io::ErrorKind::InvalidData);
-    assert_eq!(net1_err.to_string(), "Empty input file!");
+fn test_read_empty_input() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputEmpty.csv");
+    assert!(net.is_err());
+    let net_err = net.err().unwrap();
+    assert_eq!(net_err.kind(), std::io::ErrorKind::InvalidData);
+    assert_eq!(net_err.to_string(), "Empty input file!");
+}
 
-    let mut file_reader2 = CsvReader::new();
-    let net2 = file_reader2.read_file("src/io/test-data/inputBadMin.csv");
-    assert!(net2.is_err());
-    assert_eq!(net2.err().unwrap().to_string(),
+#[test]
+fn test_read_bad_task_min() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputBadMin.csv");
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
                r#"Expected integer minimum, found "a"; error: invalid digit found in string"#);
+}
 
-    let mut file_reader3 = CsvReader::new();
-    let net3 = file_reader3.read_file("src/io/test-data/inputBadMax.csv");
-    assert!(net3.is_err());
-    assert_eq!(net3.err().unwrap().to_string(),
+#[test]
+fn test_read_bad_task_max() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputBadMax.csv");
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
                r#"Expected integer maximum, found "b"; error: invalid digit found in string"#);
+}
 
-    let mut file_reader4 = CsvReader::new();
-    let net4 = file_reader4.read_file("src/io/test-data/inputBadAffinity.csv");
-    assert!(net4.is_err());
-    assert_eq!(net4.err().unwrap().to_string(),
+#[test]
+fn test_read_bad_worker_affinity() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputBadAffinity.csv");
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
                r#"Expected numeric value for worker affinity, found "c"; error: invalid float literal"#);
+}
 
-    let mut file_reader5 = CsvReader::new();
-    let net5 = file_reader5.read_file("src/io/test-data/inputExtraData.csv");
-    assert!(net5.is_err());
-    assert_eq!(net5.err().unwrap().to_string(),
+#[test]
+fn test_read_wrong_number_of_task_data() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputExtraData.csv");
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
                "Mismatched input data for tasks: each task must have both a minimum and a maximum \
                 number of workers specified.");
+}
 
-    let mut file_reader6 = CsvReader::new();
-    let net6 = file_reader6.read_file("src/io/test-data/inputExtraAffinity.csv");
-    assert!(net6.is_err());
-    assert_eq!(net6.err().unwrap().to_string(),
+#[test]
+fn test_read_wrong_number_of_affinities() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/test-data/inputExtraAffinity.csv");
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
                "Too few task affinities for worker Gina!");
 }

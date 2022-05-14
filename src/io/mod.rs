@@ -19,7 +19,7 @@ pub(crate) trait Reader {
 }
 
 pub(crate) trait Writer {
-    fn write_file(results: &Network) -> std::io::Result<()>;
+    fn write_file(results: &Network, filename: &str) -> std::io::Result<()>;
 }
 
 pub(crate) fn reader_factory(file_type: FileType) -> impl Reader {
