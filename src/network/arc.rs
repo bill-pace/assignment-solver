@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt;
 use crate::network::node::Node;
 
@@ -28,8 +27,8 @@ impl Arc {
     /// struct, and therefore dropped when the constructor returns: this reference allows the arc to
     /// tell its start node about the connection to its end node.
     pub fn new(start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
-               max_flow: usize, nodes: &mut HashMap<usize, Node>) -> Arc {
-        nodes.get_mut(&start_node_id).unwrap().add_connection(end_node_id);
+               max_flow: usize, nodes: &mut Vec<Node>) -> Arc {
+        nodes[start_node_id].add_connection(end_node_id);
         Arc { start_node: start_node_id, end_node: end_node_id, cost,
               min_flow, max_flow, current_flow: 0 }
     }
@@ -41,7 +40,7 @@ impl Arc {
     /// decrease the amount of flow in an arc that touches the sink. The mutable reference to nodes
     /// here is passed to Arc::invert, rather than directly used, and is dropped when the function
     /// returns.
-    pub fn push_flow(&mut self, min_flow_satisfied: bool, nodes: &mut HashMap<usize, Node>)
+    pub fn push_flow(&mut self, min_flow_satisfied: bool, nodes: &mut Vec<Node>)
         -> bool {
         self.current_flow += 1;
         if min_flow_satisfied {
@@ -67,15 +66,15 @@ impl Arc {
     /// can never be part of a path to the sink (else the path would include the sink more than once
     /// and therefore be a walk), so we do not actually need to change those values: arcs whose
     /// residuals can actually impact the shortest path algorithm always have 1 max flow.
-    fn invert(&mut self, nodes: &mut HashMap<usize, Node>) {
+    fn invert(&mut self, nodes: &mut Vec<Node>) {
         // flip direction of arc
         self.cost = -self.cost;
         self.current_flow = 0; // 0 is accurate for arcs that touch workers, and resetting this
                                // value here doesn't matter for arcs that don't touch workers
 
         // update endpoints and pass info to the nodes
-        nodes.get_mut(&self.start_node).unwrap().remove_connection(self.end_node);
-        nodes.get_mut(&self.end_node).unwrap().add_connection(self.start_node);
+        nodes[self.start_node].remove_connection(self.end_node);
+        nodes[self.end_node].add_connection(self.start_node);
         let temp_id = self.start_node;
         self.start_node = self.end_node;
         self.end_node = temp_id;
@@ -97,7 +96,7 @@ impl Arc {
     }
 
     /// Invert arc for second phase of min cost augmentation, unless it's already at capacity
-    pub fn update_for_second_phase(&mut self, nodes: &mut HashMap<usize, Node>) -> bool {
+    pub fn update_for_second_phase(&mut self, nodes: &mut Vec<Node>) -> bool {
         if self.min_flow == self.max_flow {
             // nothing to update - this arc is already at max capacity, too
             return false;
