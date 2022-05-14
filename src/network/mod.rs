@@ -78,6 +78,7 @@ impl Network {
         while self.nodes[0].get_num_connected_nodes() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
+            // TODO: add shortcut based on lowest worker affinity
             let path = self.find_shortest_path();
 
             // path found, push flow and increment the amount of flow
@@ -199,7 +200,7 @@ impl Network {
     /// Push flow down each arc in a path.
     fn push_flow_down_path(&mut self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
-            let arc = self.arcs.get_mut(&(node_pair[0], node_pair[1])).unwrap();
+            let arc = self.arcs.get(&(node_pair[0], node_pair[1])).unwrap();
             let arc_inverted = arc.push_flow(self.min_flow_satisfied, &mut self.nodes);
             if arc_inverted {
                 let arc = self.arcs.remove(&(node_pair[0], node_pair[1])).unwrap();
@@ -228,7 +229,7 @@ impl Network {
     fn reset_arcs_for_second_phase(&mut self) {
         let connections = self.nodes[1].get_connections().clone();
         for connection in connections {
-            let arc = self.arcs.get_mut(&(1, connection)).unwrap();
+            let arc = self.arcs.get(&(1, connection)).unwrap();
             let arc_inverted = arc.update_for_second_phase(&mut self.nodes);
             if arc_inverted {
                 let arc = self.arcs.remove(&(1, connection)).unwrap();
@@ -247,7 +248,7 @@ fn test_push_flow() {
     let mut nodes = Vec::new();
     nodes.push(node::Node::new());
     nodes.push(node::Node::new());
-    let mut arc = arc::Arc::new(node_a_id, node_b_id, cost,
+    let arc = arc::Arc::new(node_a_id, node_b_id, cost,
                                      1, 1, &mut nodes);
 
     // test

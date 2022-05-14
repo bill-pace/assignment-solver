@@ -3,7 +3,7 @@
 /// ID numbers corresponding to the nodes that it connects to via existing arcs. Note that since
 /// this network is directed, the connected nodes do not point back to this node.
 pub struct Node {
-    connected_nodes: Vec<usize>,
+    connected_nodes: Vec<usize>, //TODO: include &mut Arc in a tuple
 }
 
 impl Node {
