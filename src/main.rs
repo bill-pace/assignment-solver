@@ -1,6 +1,16 @@
+use crate::io::{FileType, Reader, reader_factory};
+
 mod network;
 mod io;
 
 fn main() {
     println!("Hello, world!");
+}
+
+#[test]
+#[ignore]
+fn benchmark() { // complete in 24:25 on a 3.8GHz processor
+    let mut reader = reader_factory(FileType::CSV);
+    let mut network = reader.read_file("src/benchmarkInput.csv").unwrap();
+    network.find_min_cost_max_flow();
 }
