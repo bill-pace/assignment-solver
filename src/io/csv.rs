@@ -1,3 +1,5 @@
+//! Structs that implement the Reader and Writer traits for CSV-formatted files.
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::zip;
@@ -29,10 +31,12 @@ pub struct CsvReader {
 }
 
 impl CsvReader {
+    /// Create a new CsvReader struct
     pub fn new() -> CsvReader {
         CsvReader { tasks: Vec::new(), workers: Vec::new() }
     }
 
+    /// Read a provided file line by line to construct a Network from it
     fn process_file<R>(&mut self, reader: R) -> std::io::Result<Network>
         where R: BufRead {
         let network = Network::new();
@@ -67,6 +71,8 @@ impl CsvReader {
         Ok(network)
     }
 
+    /// Construct the tasks from lists of their names and the lower and upper bounds on number of
+    /// assigned workers
     fn process_tasks(&mut self, network: &Network, task_names: String, task_minima: String,
                      task_maxima: String) -> std::io::Result<()> {
         let names = task_names.split(",").collect::<Vec<&str>>();
@@ -100,8 +106,8 @@ impl CsvReader {
         Ok(())
     }
 
-    fn process_worker(&mut self, network: &Network, worker_info: String)
-        -> std::io::Result<()> {
+    /// Add a new worker to the network under construction
+    fn process_worker(&mut self, network: &Network, worker_info: String) -> std::io::Result<()> {
         let mut affinities = Vec::new();
         let mut info = worker_info.split(",");
         let worker_name = info.next().unwrap().trim().to_string();
