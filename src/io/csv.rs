@@ -156,7 +156,7 @@ impl Writer for CsvWriter {
 fn test_read() {
     let mut file_reader = CsvReader::new();
     let network = file_reader.read_file("src/io/test-data/testInput.csv").unwrap();
-    network.find_min_cost_max_flow();
+    network.find_min_cost_max_flow().unwrap();
     let total_cost =
         -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.iter()
                                                                      .map(|t| t.0)

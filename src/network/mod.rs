@@ -1,18 +1,21 @@
 //! # Network
 //!
 //! This module contains definitions and implementations for the Network struct, as well as
-//! submodules for the Node and Arc structs. A network stores its constituent nodes and arcs in
-//! HashMaps keyed on the nodes' IDs, allowing the usize IDs to be used for access instead of
-//! keeping borrowed references alive longer than strictly necessary.
+//! submodules for the Node and Arc structs and a custom error type to represent infeasibility in
+//! the problem specification. A network stores its constituent nodes and arcs in vectors and passes
+//! their indices to anything that needs to hold a reference to them.
 
 mod node;
 mod arc;
+mod feasibility_error;
 use std::cell::{Cell, RefCell};
+use crate::network::feasibility_error::FeasibilityError;
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 pub(crate) struct Network {
     min_flow_satisfied: Cell<bool>,
     min_flow_amount: Cell<usize>,
+    max_flow_amount: Cell<usize>,
     nodes: RefCell<Vec<node::Node>>,
     arcs: RefCell<Vec<arc::Arc>>
 }
@@ -24,6 +27,7 @@ impl Network {
         let new_network = Network {
             min_flow_satisfied: Cell::new(false),
             min_flow_amount: Cell::new(0),
+            max_flow_amount: Cell::new(0),
             nodes: RefCell::new(Vec::new()),
             arcs: RefCell::new(Vec::new())
         };
@@ -38,6 +42,7 @@ impl Network {
         let task_id = self.add_node();
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
+        self.max_flow_amount.set(self.max_flow_amount.get() + max_workers);
         if min_workers > 0 {
             // end node is the sink; cost is 0 because this arc does not connect workers to tasks
             self.add_arc(task_id, 1, 0.0,
@@ -70,7 +75,18 @@ impl Network {
 
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
-    pub fn find_min_cost_max_flow(&self) {
+    pub fn find_min_cost_max_flow(&self) -> Result<(), FeasibilityError> {
+        // initial checks for feasibility: make sure number of workers is within the range specified
+        // by total min and total max
+        if self.nodes.borrow().len() < self.min_flow_amount.get() {
+            return Err(FeasibilityError { message: "Not enough workers to assign!".to_string() });
+        }
+        if self.nodes.borrow().len() < self.max_flow_amount.get() {
+            return Err(FeasibilityError {
+                message: "Not enough capacity for workers!".to_string()
+            });
+        }
+
         let mut current_flow = 0_usize;
         if self.min_flow_amount.get() == 0 {
             self.reset_arcs_for_second_phase();
@@ -81,7 +97,7 @@ impl Network {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             // TODO: add shortcut based on lowest worker affinity
-            let path = self.find_shortest_path();
+            let path = self.find_shortest_path()?;
 
             // path found, push flow and increment the amount of flow
             self.push_flow_down_path(&path);
@@ -91,9 +107,11 @@ impl Network {
                 self.reset_arcs_for_second_phase();
             }
         }
+
+        Ok(())
     }
 
-    /// Create a new Node and add it to the network's HashMap of nodes.
+    /// Create a new Node and add it to the network's collection of nodes.
     fn add_node(&self) -> usize {
         let new_node = node::Node::new();
         let mut nodes = self.nodes.borrow_mut();
@@ -102,7 +120,7 @@ impl Network {
         node_id
     }
 
-    /// Create a new Arc and add it to the network's HashMap of arcs
+    /// Create a new Arc and add it to the network's collection of arcs
     fn add_arc(&self, start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
                max_flow: usize) {
         let new_arc = arc::Arc::new(start_node_id, end_node_id, cost, min_flow, max_flow);
@@ -113,7 +131,7 @@ impl Network {
 
     /// Find the shortest path from the network's source node to its sink node, using an adaptation
     /// of the Bellman-Ford algorithm.
-    fn find_shortest_path(&self) -> Vec<usize> {
+    fn find_shortest_path(&self) -> Result<Vec<usize>, FeasibilityError> {
         let nodes = self.nodes.borrow();
         let arcs = self.arcs.borrow();
         let num_nodes = nodes.len();
@@ -167,13 +185,13 @@ impl Network {
             nodes_updated.dedup();
         }
 
-        // if no path to sink found, or number of iterations exceeds number of nodes, there's a bug
-        // TODO: no path found may also be an infeasible problem specification from the inputs,
-        //       rather than a bug in the code
-        predecessors[1].expect("No path found to sink node!");
+        // if number of iterations exceeds number of nodes, there's a bug
         if num_iterations >= num_nodes {
             panic!("Negative cycle detected - this can't happen in the algorithm this code \
                    attempts to implement, so there must be a bug.");
+        }
+        if predecessors[1].is_none() {
+            return Err(FeasibilityError { message: "Unable to assign all workers!".to_string() });
         }
 
         // construct path backwards
@@ -188,7 +206,7 @@ impl Network {
         }
 
         path.reverse();
-        path
+        Ok(path)
     }
 
     /// Get total distance of a path by adding the costs of each arc in the path.
@@ -249,6 +267,7 @@ impl Network {
         }
     }
 
+    /// Find the ID of the arc that connects the two identified nodes, if any
     fn find_connecting_arc_id(&self, start_node_id: usize, end_node_id: usize) -> Option<usize> {
         for connection in self.nodes.borrow()[start_node_id].get_connections() {
             if self.arcs.borrow()[connection].get_end_node_id() == end_node_id {
@@ -297,7 +316,7 @@ fn test_shortest_path() {
     // test
     assert_eq!(network.nodes.borrow().len(), 6);
     assert_eq!(network.arcs.borrow().len(), 8);
-    let mut path = network.find_shortest_path();
+    let mut path = network.find_shortest_path().unwrap();
     assert_eq!(path.len(), 4);
     assert_eq!(*path.first().unwrap(), 0);
     assert_eq!(*path.last().unwrap(), 1);
@@ -376,7 +395,7 @@ fn test_min_cost_augmentation() {
     assert_eq!(network.nodes.borrow().len(), 17);
     assert_eq!(network.arcs.borrow().len(), 65);
     assert_eq!(network.nodes.borrow()[0].get_num_connections(), 10);
-    network.find_min_cost_max_flow();
+    network.find_min_cost_max_flow().unwrap();
     let total_cost = -network.get_cost_of_arcs_from_nodes(&task_ids);
     assert_eq!(network.nodes.borrow()[0].get_num_connections(), 0);
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);

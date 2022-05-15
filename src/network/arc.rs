@@ -32,28 +32,27 @@ impl Arc {
     /// decrease the amount of flow in an arc that touches the sink.
     pub fn push_flow(&self, min_flow_satisfied: bool) -> bool {
         self.current_flow.set(self.current_flow.get() + 1);
+        let mut inverted = false;
         if min_flow_satisfied {
             if self.current_flow.get() == self.max_flow {
                 self.invert();
-                return true;
+                inverted = true;
             }
         } else {
             if self.current_flow.get() == self.min_flow {
                 self.invert();
-                return true;
+                inverted = true;
             }
         }
-        false
+        inverted
     }
 
     /// Invert this arc so the residual network's representation stays up-to-date: negate cost, find
-    /// new flow bounds, reset the current flow, and flip the start/end node IDs. The mutable
-    /// reference to nodes here enables the nodes' connections to be updated as the arc flips
-    /// direction, and is dropped when the function returns.
-    /// For the network in this particular problem, the only arcs whose flow bounds would need to
-    /// change in the residual network are those that flow into the sink. Arcs that leave the sink
-    /// can never be part of a path to the sink (else the path would include the sink more than once
-    /// and therefore be a walk), so we do not actually need to change those values: arcs whose
+    /// new flow bounds, reset the current flow, and flip the start/end node IDs. For the network in
+    /// this particular problem, the only arcs whose flow bounds would need to change in the
+    /// residual network are those that flow into the sink. Arcs that leave the sink can never be
+    /// part of a path to the sink (else the path would include the sink more than once and
+    /// therefore be a walk), so we do not actually need to change those values: arcs whose
     /// residuals can actually impact the shortest path algorithm always have 1 max flow.
     fn invert(&self) {
         // flip direction of arc
@@ -82,7 +81,7 @@ impl Arc {
         self.end_node.get()
     }
 
-    /// Invert arc for second phase of min cost augmentation, unless it's already at capacity
+    /// Invert arc for second phase of min cost augmentation, unless it's already at max capacity
     pub fn update_for_second_phase(&self) -> bool {
         if self.min_flow == self.max_flow {
             // nothing to update - this arc is already at max capacity, too

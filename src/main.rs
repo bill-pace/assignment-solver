@@ -12,5 +12,5 @@ fn main() {
 fn benchmark() { // complete in 4:13 on a 3.8GHz processor
     let mut reader = reader_factory(FileType::CSV);
     let network = reader.read_file("src/benchmarkInput.csv").unwrap();
-    network.find_min_cost_max_flow();
+    network.find_min_cost_max_flow().unwrap();
 }
