@@ -7,32 +7,37 @@
 
 mod node;
 mod arc;
+use std::cell::{Cell, RefCell};
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 pub(crate) struct Network {
-    min_flow_satisfied: bool,
-    min_flow_amount: usize,
-    nodes: Vec<node::Node>,
-    arcs: Vec<arc::Arc>
+    min_flow_satisfied: Cell<bool>,
+    min_flow_amount: Cell<usize>,
+    nodes: RefCell<Vec<node::Node>>,
+    arcs: RefCell<Vec<arc::Arc>>
 }
 
 impl Network {
     /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
     /// 1.
     pub fn new() -> Network {
-        let mut new_network = Network { min_flow_satisfied: false, min_flow_amount: 0,
-                                        nodes: Vec::new(), arcs: Vec::new() };
-        new_network.add_node();
-        new_network.add_node();
+        let new_network = Network {
+            min_flow_satisfied: Cell::new(false),
+            min_flow_amount: Cell::new(0),
+            nodes: RefCell::new(Vec::new()),
+            arcs: RefCell::new(Vec::new())
+        };
+        new_network.add_node(); // flow source, id 0
+        new_network.add_node(); // flow sink, id 1
         new_network
     }
 
     /// Add a new node to the network representing a task, and connect that node to the sink. Return
     /// the task's ID number to look it back up after assignment is complete.
-    pub fn add_task(&mut self, min_workers: usize, max_workers: usize) -> usize {
+    pub fn add_task(&self, min_workers: usize, max_workers: usize) -> usize {
         let task_id = self.add_node();
 
-        self.min_flow_amount += min_workers;
+        self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
         if min_workers > 0 {
             // end node is the sink; cost is 0 because this arc does not connect workers to tasks
             self.add_arc(task_id, 1, 0.0,
@@ -49,7 +54,7 @@ impl Network {
     /// Add a new node to the network representing a worker, connect the source to the new node, and
     /// connect the new node to all tasks the worker can perform. As with add_task, return the
     /// worker node's ID.
-    pub fn add_worker(&mut self, task_affinity: &Vec<(usize, f32)>) -> usize {
+    pub fn add_worker(&self, task_affinity: &Vec<(usize, f32)>) -> usize {
         let worker_id = self.add_node();
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
         // the flow bound is 1 for both phases of the min cost augmentation
@@ -65,14 +70,14 @@ impl Network {
 
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
-    pub fn find_min_cost_max_flow(&mut self) {
+    pub fn find_min_cost_max_flow(&self) {
         let mut current_flow = 0_usize;
-        if self.min_flow_amount == 0 {
+        if self.min_flow_amount.get() == 0 {
             self.reset_arcs_for_second_phase();
         }
 
         // Connections from the source are unassigned workers - loop until they're all assigned.
-        while self.nodes[0].get_num_connections() > 0 {
+        while self.nodes.borrow()[0].get_num_connections() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             // TODO: add shortcut based on lowest worker affinity
@@ -81,7 +86,7 @@ impl Network {
             // path found, push flow and increment the amount of flow
             self.push_flow_down_path(&path);
             current_flow += 1;
-            if current_flow == self.min_flow_amount {
+            if current_flow == self.min_flow_amount.get() {
                 // minimum requirement achieved: invert arcs that touch the sink
                 self.reset_arcs_for_second_phase();
             }
@@ -89,29 +94,34 @@ impl Network {
     }
 
     /// Create a new Node and add it to the network's HashMap of nodes.
-    fn add_node(&mut self) -> usize {
+    fn add_node(&self) -> usize {
         let new_node = node::Node::new();
-        let node_id = self.nodes.len();
-        self.nodes.push(new_node);
+        let mut nodes = self.nodes.borrow_mut();
+        let node_id = nodes.len();
+        nodes.push(new_node);
         node_id
     }
 
     /// Create a new Arc and add it to the network's HashMap of arcs
-    fn add_arc(&mut self, start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
+    fn add_arc(&self, start_node_id: usize, end_node_id: usize, cost: f32, min_flow: usize,
                max_flow: usize) {
         let new_arc = arc::Arc::new(start_node_id, end_node_id, cost, min_flow, max_flow);
-        self.nodes[start_node_id].add_connection(self.arcs.len());
-        self.arcs.push( new_arc);
+        let mut arcs = self.arcs.borrow_mut();
+        self.nodes.borrow()[start_node_id].add_connection(arcs.len());
+        arcs.push( new_arc);
     }
 
     /// Find the shortest path from the network's source node to its sink node, using an adaptation
     /// of the Bellman-Ford algorithm.
     fn find_shortest_path(&self) -> Vec<usize> {
+        let nodes = self.nodes.borrow();
+        let arcs = self.arcs.borrow();
+        let num_nodes = nodes.len();
+
         // Initialize vectors that represent the paths found so far - at start, we have found no
         // paths, so no node has a found predecessor and all nodes are considered infinite distance
         // from the source, except for the source itself. Node IDs are sequential usize that start
         // from zero to enable using them as indices in these vectors.
-        let num_nodes = self.nodes.len();
         let mut distances = vec![f32::INFINITY; num_nodes];
         distances[0] = 0.0;
         let mut predecessors: Vec<Option<usize>> = vec![None; num_nodes];
@@ -127,9 +137,9 @@ impl Network {
             // for each node updated in the last iteration, see if any of its existing connections
             // result in a shorter path to any other node than what's been found so far
             for node_id in &nodes_to_search_from {
-                let node = &self.nodes[*node_id];
+                let node = &nodes[*node_id];
                 for connected_arc_id in node.get_connections() {
-                    let connected_arc = &self.arcs[connected_arc_id];
+                    let connected_arc = &arcs[connected_arc_id];
                     let connected_node_id = connected_arc.get_end_node_id();
                     // calculate distances
                     let cur_dist = distances[connected_node_id];
@@ -185,9 +195,10 @@ impl Network {
     fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
         path.windows(2)
             .map(|node_pair| {
-                for arc_id in self.nodes[node_pair[0]].get_connections() {
-                    if self.arcs[arc_id].get_end_node_id() == node_pair[1] {
-                        return self.arcs[arc_id].get_cost();
+                let arcs = self.arcs.borrow();
+                for arc_id in self.nodes.borrow()[node_pair[0]].get_connections() {
+                    if arcs[arc_id].get_end_node_id() == node_pair[1] {
+                        return arcs[arc_id].get_cost();
                     }
                 }
                 panic!("No arc found from {} to {}", node_pair[0], node_pair[1])
@@ -196,13 +207,14 @@ impl Network {
     }
 
     /// Push flow down each arc in a path.
-    fn push_flow_down_path(&mut self, path: &Vec<usize>) {
+    fn push_flow_down_path(&self, path: &Vec<usize>) {
         for node_pair in path.windows(2) {
             let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1]).unwrap();
-            let arc_inverted = self.arcs[arc].push_flow(self.min_flow_satisfied);
+            let arc_inverted = self.arcs.borrow()[arc].push_flow(self.min_flow_satisfied.get());
             if arc_inverted {
-                self.nodes[node_pair[0]].remove_connection(arc);
-                self.nodes[node_pair[1]].add_connection(arc);
+                let nodes = self.nodes.borrow();
+                nodes[node_pair[0]].remove_connection(arc);
+                nodes[node_pair[1]].add_connection(arc);
             }
         }
     }
@@ -212,9 +224,10 @@ impl Network {
     /// assigning a worker to a task involves negating the corresponding arc's cost.
     pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
         nodes.iter()
-             .map(|node| self.nodes[*node]
+             .map(|node| self.nodes.borrow()[*node]
                              .get_connections().iter()
-                             .map(|connected_node| self.arcs[*connected_node].get_cost())
+                             .map(|connected_node|
+                                 self.arcs.borrow()[*connected_node].get_cost())
                              .sum::<f32>())
              .sum()
     }
@@ -223,21 +236,22 @@ impl Network {
     /// requirement satisfied, and allows further assignment of all remaining workers up to the max
     /// for each task. This method resets all arcs touching the sink to account for the
     /// corresponding changes in the residual network.
-    fn reset_arcs_for_second_phase(&mut self) {
-        let connections = self.nodes[1].get_connections();
+    fn reset_arcs_for_second_phase(&self) {
+        let nodes = self.nodes.borrow();
+        let connections = nodes[1].get_connections();
         for connection in connections {
-            let arc = &self.arcs[connection];
+            let arc = &self.arcs.borrow()[connection];
             let arc_inverted = arc.update_for_second_phase();
             if arc_inverted {
-                self.nodes[arc.get_end_node_id()].remove_connection(connection);
-                self.nodes[arc.get_start_node_id()].add_connection(connection);
+                nodes[arc.get_end_node_id()].remove_connection(connection);
+                nodes[arc.get_start_node_id()].add_connection(connection);
             }
         }
     }
 
     fn find_connecting_arc_id(&self, start_node_id: usize, end_node_id: usize) -> Option<usize> {
-        for connection in self.nodes[start_node_id].get_connections() {
-            if self.arcs[connection].get_end_node_id() == end_node_id {
+        for connection in self.nodes.borrow()[start_node_id].get_connections() {
+            if self.arcs.borrow()[connection].get_end_node_id() == end_node_id {
                 return Some(connection);
             }
         }
@@ -251,28 +265,28 @@ fn test_push_flow() {
     let node_a_id = 0;
     let node_b_id = 1;
     let cost = 16.8;
-    let mut network = Network::new();
+    let network = Network::new();
     network.add_arc(node_a_id, node_b_id, cost, 1, 1);
 
     // test
-    assert_eq!(network.nodes[node_a_id].get_num_connections(), 1);
-    assert_eq!(network.nodes[node_b_id].get_num_connections(), 0);
-    assert_eq!(network.arcs[network.nodes[node_a_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
+    assert_eq!(network.nodes.borrow()[node_a_id].get_num_connections(), 1);
+    assert_eq!(network.nodes.borrow()[node_b_id].get_num_connections(), 0);
+    assert_eq!(network.arcs.borrow()[network.nodes.borrow()[node_a_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
                node_b_id);
     network.push_flow_down_path(&vec![0, 1]);
-    assert_eq!(network.nodes[node_a_id].get_num_connections(), 0);
-    assert_eq!(network.nodes[node_b_id].get_num_connections(), 1);
-    assert_eq!(network.arcs[network.nodes[node_b_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
+    assert_eq!(network.nodes.borrow()[node_a_id].get_num_connections(), 0);
+    assert_eq!(network.nodes.borrow()[node_b_id].get_num_connections(), 1);
+    assert_eq!(network.arcs.borrow()[network.nodes.borrow()[node_b_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
                node_a_id);
-    assert_eq!(network.arcs[0].get_cost(), -cost);
-    assert_eq!(network.arcs[0].get_start_node_id(), node_b_id);
-    assert_eq!(network.arcs[0].get_end_node_id(), node_a_id)
+    assert_eq!(network.arcs.borrow()[0].get_cost(), -cost);
+    assert_eq!(network.arcs.borrow()[0].get_start_node_id(), node_b_id);
+    assert_eq!(network.arcs.borrow()[0].get_end_node_id(), node_a_id);
 }
 
 #[test]
 fn test_shortest_path() {
     // setup
-    let mut network = Network::new();
+    let network = Network::new();
     let mut task_ids = Vec::new();
     // add task 1
     task_ids.push(network.add_task(1, 1));
@@ -281,8 +295,8 @@ fn test_shortest_path() {
     network.add_worker(&vec![(task_ids[0], 2.6_f32), (task_ids[1], 1.9_f32)]);
 
     // test
-    assert_eq!(network.nodes.len(), 6);
-    assert_eq!(network.arcs.len(), 8);
+    assert_eq!(network.nodes.borrow().len(), 6);
+    assert_eq!(network.arcs.borrow().len(), 8);
     let mut path = network.find_shortest_path();
     assert_eq!(path.len(), 4);
     assert_eq!(*path.first().unwrap(), 0);
@@ -299,7 +313,7 @@ fn test_shortest_path() {
 #[test]
 fn test_min_cost_augmentation() {
     // setup
-    let mut network = Network::new();
+    let network = Network::new();
     let mut task_ids = Vec::new();
     let mut worker_ids = Vec::new();
     task_ids.push(network.add_task(1, 2));
@@ -359,11 +373,11 @@ fn test_min_cost_augmentation() {
                                              (task_ids[4], 4.0)]));
 
     // test
-    assert_eq!(network.nodes.len(), 17);
-    assert_eq!(network.arcs.len(), 65);
-    assert_eq!(network.nodes[0].get_num_connections(), 10);
+    assert_eq!(network.nodes.borrow().len(), 17);
+    assert_eq!(network.arcs.borrow().len(), 65);
+    assert_eq!(network.nodes.borrow()[0].get_num_connections(), 10);
     network.find_min_cost_max_flow();
     let total_cost = -network.get_cost_of_arcs_from_nodes(&task_ids);
-    assert_eq!(network.nodes[0].get_num_connections(), 0);
+    assert_eq!(network.nodes.borrow()[0].get_num_connections(), 0);
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }

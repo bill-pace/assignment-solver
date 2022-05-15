@@ -35,7 +35,7 @@ impl CsvReader {
 
     fn process_file<R>(&mut self, reader: R) -> std::io::Result<Network>
         where R: BufRead {
-        let mut network = Network::new();
+        let network = Network::new();
         let mut line_iter = reader.lines();
 
         // initialize tasks
@@ -54,12 +54,12 @@ impl CsvReader {
             None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
                                                    "No maximum capacities for tasks!"))
         };
-        self.process_tasks(&mut network, task_names, task_minima, task_maxima)?;
+        self.process_tasks(&network, task_names, task_minima, task_maxima)?;
 
         // initialize workers
         while let Some(line) = line_iter.next() {
             match line {
-                Ok(l) => self.process_worker(&mut network, l)?,
+                Ok(l) => self.process_worker(&network, l)?,
                 Err(err) => return Err(err)
             }
         }
@@ -67,7 +67,7 @@ impl CsvReader {
         Ok(network)
     }
 
-    fn process_tasks(&mut self, network: &mut Network, task_names: String, task_minima: String,
+    fn process_tasks(&mut self, network: &Network, task_names: String, task_minima: String,
                      task_maxima: String) -> std::io::Result<()> {
         let names = task_names.split(",").collect::<Vec<&str>>();
         let minima = task_minima.split(",").collect::<Vec<&str>>();
@@ -100,7 +100,7 @@ impl CsvReader {
         Ok(())
     }
 
-    fn process_worker(&mut self, network: &mut Network, worker_info: String)
+    fn process_worker(&mut self, network: &Network, worker_info: String)
         -> std::io::Result<()> {
         let mut affinities = Vec::new();
         let mut info = worker_info.split(",");
@@ -155,7 +155,7 @@ impl Writer for CsvWriter {
 #[test]
 fn test_read() {
     let mut file_reader = CsvReader::new();
-    let mut network = file_reader.read_file("src/io/test-data/testInput.csv").unwrap();
+    let network = file_reader.read_file("src/io/test-data/testInput.csv").unwrap();
     network.find_min_cost_max_flow();
     let total_cost =
         -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.iter()
