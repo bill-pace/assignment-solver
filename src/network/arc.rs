@@ -31,7 +31,7 @@ impl Arc {
     /// network are those that touch the sink. Since we never push flow in a cycle, we will never
     /// decrease the amount of flow in an arc that touches the sink.
     pub fn push_flow(&self, min_flow_satisfied: bool) -> bool {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -60,7 +60,7 @@ impl Arc {
     /// therefore be a walk), so we do not actually need to change those values: arcs whose
     /// residuals can actually impact the shortest path algorithm always have 1 max flow.
     fn invert(&self) {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -94,7 +94,7 @@ impl Arc {
 
     /// Invert arc for second phase of min cost augmentation, unless it's already at max capacity
     pub fn update_for_second_phase(&self) -> bool {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }

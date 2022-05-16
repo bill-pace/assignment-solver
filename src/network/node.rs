@@ -16,7 +16,7 @@ impl Node {
 
     /// Get number of connected arcs
     pub fn get_num_connections(&self) -> usize {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -34,7 +34,7 @@ impl Node {
 
     /// Create new connection
     pub fn add_connection(&self, arc_id: usize) {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -46,7 +46,7 @@ impl Node {
 
     /// Remove existing connection. Assume that the connection can be listed only once.
     pub fn remove_connection(&self, arc_id: usize) {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -58,7 +58,7 @@ impl Node {
 
     /// Returns a clone of the list of connected arc IDs.
     pub fn get_connections(&self) -> Ref<Vec<usize>> {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }

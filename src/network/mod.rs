@@ -79,7 +79,7 @@ impl Network {
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
     pub fn find_min_cost_max_flow(&self) -> Result<(), FeasibilityError> {
-        #[cfg(test)] {
+        #[cfg(feature = "profiling")] {
             puffin::profile_function!();
         }
 
@@ -141,7 +141,7 @@ impl Network {
     /// Find the shortest path from the network's source node to its sink node, using an adaptation
     /// of the Bellman-Ford algorithm.
     fn find_shortest_path(&self) -> Result<Vec<usize>, FeasibilityError> {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
             puffin::GlobalProfiler::lock().new_frame();
@@ -241,7 +241,7 @@ impl Network {
 
     /// Push flow down each arc in a path.
     fn push_flow_down_path(&self, path: &Vec<usize>) {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -275,7 +275,7 @@ impl Network {
     /// for each task. This method resets all arcs touching the sink to account for the
     /// corresponding changes in the residual network.
     fn reset_arcs_for_second_phase(&self) {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
@@ -297,7 +297,7 @@ impl Network {
 
     /// Find the ID of the arc that connects the two identified nodes, if any
     fn find_connecting_arc_id(&self, start_node_id: usize, end_node_id: usize) -> Option<usize> {
-        #[cfg(test)]
+        #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
         }
