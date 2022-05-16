@@ -10,12 +10,15 @@ mod arc;
 mod feasibility_error;
 use std::cell::{Cell, RefCell};
 use crate::network::feasibility_error::FeasibilityError;
+#[cfg(test)]
+use puffin;
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 pub(crate) struct Network {
     min_flow_satisfied: Cell<bool>,
     min_flow_amount: Cell<usize>,
     max_flow_amount: Cell<usize>,
+    num_tasks: Cell<usize>,
     nodes: RefCell<Vec<node::Node>>,
     arcs: RefCell<Vec<arc::Arc>>
 }
@@ -28,6 +31,7 @@ impl Network {
             min_flow_satisfied: Cell::new(false),
             min_flow_amount: Cell::new(0),
             max_flow_amount: Cell::new(0),
+            num_tasks: Cell::new(0),
             nodes: RefCell::new(Vec::new()),
             arcs: RefCell::new(Vec::new())
         };
@@ -43,6 +47,7 @@ impl Network {
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
         self.max_flow_amount.set(self.max_flow_amount.get() + max_workers);
+        self.num_tasks.set(self.num_tasks.get() + 1);
         if min_workers > 0 {
             // end node is the sink; cost is 0 because this arc does not connect workers to tasks
             self.add_arc(task_id, 1, 0.0,
@@ -76,12 +81,18 @@ impl Network {
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
     pub fn find_min_cost_max_flow(&self) -> Result<(), FeasibilityError> {
+        #[cfg(test)] {
+            puffin::profile_function!();
+        }
+
         // initial checks for feasibility: make sure number of workers is within the range specified
         // by total min and total max
-        if self.nodes.borrow().len() < self.min_flow_amount.get() {
+        let nodes = self.nodes.borrow();
+        let num_workers = nodes.len() - self.num_tasks.get() - 2; // 2 are source and sink
+        if num_workers < self.min_flow_amount.get() {
             return Err(FeasibilityError { message: "Not enough workers to assign!".to_string() });
         }
-        if self.nodes.borrow().len() < self.max_flow_amount.get() {
+        if num_workers > self.max_flow_amount.get() {
             return Err(FeasibilityError {
                 message: "Not enough capacity for workers!".to_string()
             });
@@ -93,7 +104,7 @@ impl Network {
         }
 
         // Connections from the source are unassigned workers - loop until they're all assigned.
-        while self.nodes.borrow()[0].get_num_connections() > 0 {
+        while nodes[0].get_num_connections() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             // TODO: add shortcut based on lowest worker affinity
@@ -132,6 +143,11 @@ impl Network {
     /// Find the shortest path from the network's source node to its sink node, using an adaptation
     /// of the Bellman-Ford algorithm.
     fn find_shortest_path(&self) -> Result<Vec<usize>, FeasibilityError> {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         let nodes = self.nodes.borrow();
         let arcs = self.arcs.borrow();
         let num_nodes = nodes.len();
@@ -226,6 +242,11 @@ impl Network {
 
     /// Push flow down each arc in a path.
     fn push_flow_down_path(&self, path: &Vec<usize>) {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         for node_pair in path.windows(2) {
             let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1]).unwrap();
             let arc_inverted = self.arcs.borrow()[arc].push_flow(self.min_flow_satisfied.get());
@@ -255,6 +276,11 @@ impl Network {
     /// for each task. This method resets all arcs touching the sink to account for the
     /// corresponding changes in the residual network.
     fn reset_arcs_for_second_phase(&self) {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         let nodes = self.nodes.borrow();
         let connections = nodes[1].get_connections();
         for connection in connections {
@@ -269,6 +295,11 @@ impl Network {
 
     /// Find the ID of the arc that connects the two identified nodes, if any
     fn find_connecting_arc_id(&self, start_node_id: usize, end_node_id: usize) -> Option<usize> {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         for connection in self.nodes.borrow()[start_node_id].get_connections() {
             if self.arcs.borrow()[connection].get_end_node_id() == end_node_id {
                 return Some(connection);
