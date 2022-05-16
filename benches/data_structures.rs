@@ -3,6 +3,7 @@ extern crate bencher;
 
 use bencher::Bencher;
 use std::collections::HashMap;
+use std::cell::RefCell;
 
 fn vector(bench: &mut Bencher) {
     let mut distances = vec![f32::INFINITY; 5102];
@@ -40,6 +41,23 @@ fn read_hash_map(bench: &mut Bencher) {
     })
 }
 
+fn clone_vec(bench: &mut Bencher) {
+    let v = RefCell::new(vec![0_usize, 5000]);
+
+    bench.iter(|| {
+        let cv = v.borrow().clone();
+    })
+}
+
+fn borrow_vec(bench: &mut Bencher) {
+    let v = RefCell::new(vec![0_usize, 5000]);
+
+    bench.iter(|| {
+        let rv = v.borrow();
+    })
+}
+
 benchmark_group!(write_benches, vector, hash_map);
 benchmark_group!(read_benches, read_vector, read_hash_map);
-benchmark_main!(write_benches, read_benches);
+benchmark_group!(ref_vector, clone_vec, borrow_vec);
+benchmark_main!(write_benches, read_benches, ref_vector);

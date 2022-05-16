@@ -81,8 +81,8 @@ impl CsvReader {
         if names.len() != minima.len() || names.len() != maxima.len() {
             // mismatched input sizes imply either missing or extra data and thus bad input format
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
-                                           "Mismatched input data for tasks: each task must have both a minimum \
-                                             and a maximum number of workers specified."));
+                                           "Mismatched input data for tasks: each task must have both \
+                                           a minimum and a maximum number of workers specified."));
         }
 
         for task_info in zip(names, zip(minima, maxima)).skip(1) {
@@ -116,14 +116,17 @@ impl CsvReader {
             let val = match info.next() {
                 Some(v) => v,
                 None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
-                format!("Too few task affinities for worker {}!", worker_name)))
+                                                       format!("Too few task affinities for worker {}!",
+                                                               worker_name)))
             };
 
             if val != "" {
                 let aff = match f32::from_str(val) {
                     Ok(v) => v,
-                    Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
-                                                               format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#, val, err)))
+                    Err(err) =>
+                        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
+                                                       format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#,
+                                                               val, err)))
                 };
                 affinities.push((task_id, aff)); // task ID stored in self.tasks
             }
@@ -165,8 +168,8 @@ fn test_read() {
     network.find_min_cost_max_flow().unwrap();
     let total_cost =
         -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.iter()
-                                                                     .map(|t| t.0)
-                                                                     .collect());
+            .map(|t| t.0)
+            .collect());
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }
 

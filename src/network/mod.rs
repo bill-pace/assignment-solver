@@ -10,8 +10,6 @@ mod arc;
 mod feasibility_error;
 use std::cell::{Cell, RefCell};
 use crate::network::feasibility_error::FeasibilityError;
-#[cfg(test)]
-use puffin;
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 pub(crate) struct Network {
@@ -146,6 +144,7 @@ impl Network {
         #[cfg(test)]
         {
             puffin::profile_function!();
+            puffin::GlobalProfiler::lock().new_frame();
         }
 
         let nodes = self.nodes.borrow();
@@ -172,8 +171,8 @@ impl Network {
             // result in a shorter path to any other node than what's been found so far
             for node_id in &nodes_to_search_from {
                 let node = &nodes[*node_id];
-                for connected_arc_id in node.get_connections() {
-                    let connected_arc = &arcs[connected_arc_id];
+                for connected_arc_id in node.get_connections().iter() {
+                    let connected_arc = &arcs[*connected_arc_id];
                     let connected_node_id = connected_arc.get_end_node_id();
                     // calculate distances
                     let cur_dist = distances[connected_node_id];
@@ -230,9 +229,9 @@ impl Network {
         path.windows(2)
             .map(|node_pair| {
                 let arcs = self.arcs.borrow();
-                for arc_id in self.nodes.borrow()[node_pair[0]].get_connections() {
-                    if arcs[arc_id].get_end_node_id() == node_pair[1] {
-                        return arcs[arc_id].get_cost();
+                for arc_id in self.nodes.borrow()[node_pair[0]].get_connections().iter() {
+                    if arcs[*arc_id].get_end_node_id() == node_pair[1] {
+                        return arcs[*arc_id].get_cost();
                     }
                 }
                 panic!("No arc found from {} to {}", node_pair[0], node_pair[1])
@@ -266,7 +265,7 @@ impl Network {
              .map(|node| self.nodes.borrow()[*node]
                              .get_connections().iter()
                              .map(|connected_node|
-                                 self.arcs.borrow()[*connected_node].get_cost())
+                                  self.arcs.borrow()[*connected_node].get_cost())
                              .sum::<f32>())
              .sum()
     }
@@ -283,7 +282,10 @@ impl Network {
 
         let nodes = self.nodes.borrow();
         let connections = nodes[1].get_connections();
-        for connection in connections {
+        // need to clone then drop here to avoid unsafe borrowing
+        let cloned_connections = connections.clone();
+        drop(connections);
+        for connection in cloned_connections {
             let arc = &self.arcs.borrow()[connection];
             let arc_inverted = arc.update_for_second_phase();
             if arc_inverted {
@@ -300,9 +302,9 @@ impl Network {
             puffin::profile_function!();
         }
 
-        for connection in self.nodes.borrow()[start_node_id].get_connections() {
-            if self.arcs.borrow()[connection].get_end_node_id() == end_node_id {
-                return Some(connection);
+        for connection in self.nodes.borrow()[start_node_id].get_connections().iter() {
+            if self.arcs.borrow()[*connection].get_end_node_id() == end_node_id {
+                return Some(*connection);
             }
         }
         None

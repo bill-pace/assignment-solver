@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
 /// A generic node in the network, used to represent source/sink, workers, and tasks.
 /// Each node has an ID number sequentially generated on construction, and a collection of other
@@ -16,6 +16,11 @@ impl Node {
 
     /// Get number of connected arcs
     pub fn get_num_connections(&self) -> usize {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         self.connected_arcs.borrow().len()
     }
 
@@ -29,6 +34,11 @@ impl Node {
 
     /// Create new connection
     pub fn add_connection(&self, arc_id: usize) {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         if !self.connected_arcs.borrow().contains(&arc_id) {
             self.connected_arcs.borrow_mut().push(arc_id);
         }
@@ -36,13 +46,23 @@ impl Node {
 
     /// Remove existing connection. Assume that the connection can be listed only once.
     pub fn remove_connection(&self, arc_id: usize) {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         let idx = self.connected_arcs.borrow().iter()
             .position(|x| *x == arc_id).unwrap();
         self.connected_arcs.borrow_mut().swap_remove(idx);
     }
 
     /// Returns a clone of the list of connected arc IDs.
-    pub fn get_connections(&self) -> Vec<usize> {
-        self.connected_arcs.borrow().clone()
+    pub fn get_connections(&self) -> Ref<Vec<usize>> {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
+        self.connected_arcs.borrow()
     }
 }

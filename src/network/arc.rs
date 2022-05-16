@@ -31,6 +31,11 @@ impl Arc {
     /// network are those that touch the sink. Since we never push flow in a cycle, we will never
     /// decrease the amount of flow in an arc that touches the sink.
     pub fn push_flow(&self, min_flow_satisfied: bool) -> bool {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         self.current_flow.set(self.current_flow.get() + 1);
         let mut inverted = false;
         if min_flow_satisfied {
@@ -55,10 +60,16 @@ impl Arc {
     /// therefore be a walk), so we do not actually need to change those values: arcs whose
     /// residuals can actually impact the shortest path algorithm always have 1 max flow.
     fn invert(&self) {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         // flip direction of arc
         self.cost.set(-self.cost.get());
-        self.current_flow.set(0); // 0 is accurate for arcs that touch workers, and resetting
-                                 // this value here doesn't matter for arcs that don't touch workers
+        // 0 is accurate for arcs that touch workers, and resetting
+        // this value here doesn't matter for arcs that don't touch workers
+        self.current_flow.set(0);
 
         // switch endpoints
         let temp_id = self.start_node.get();
@@ -83,6 +94,11 @@ impl Arc {
 
     /// Invert arc for second phase of min cost augmentation, unless it's already at max capacity
     pub fn update_for_second_phase(&self) -> bool {
+        #[cfg(test)]
+        {
+            puffin::profile_function!();
+        }
+
         if self.min_flow == self.max_flow {
             // nothing to update - this arc is already at max capacity, too
             return false;
