@@ -231,6 +231,7 @@ impl Network {
     }
 
     /// Get total distance of a path by adding the costs of each arc in the path.
+    #[cfg(test)]
     fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
         path.windows(2)
             .map(|node_pair| {
@@ -266,6 +267,7 @@ impl Network {
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
     /// task node IDs, this method will return -1 times the total cost of worker assignments, since
     /// assigning a worker to a task involves negating the corresponding arc's cost.
+    #[cfg(test)]
     pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
         nodes.iter()
              .map(|node| self.nodes.borrow()[*node]

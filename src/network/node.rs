@@ -25,6 +25,7 @@ impl Node {
     }
 
     /// Get ID of first connected arc, if any
+    #[cfg(test)]
     pub fn get_first_connected_arc_id(&self) -> Option<usize> {
         match self.connected_arcs.borrow().first() {
             Some(v) => Some(*v),
