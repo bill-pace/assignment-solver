@@ -287,11 +287,8 @@ impl Network {
         }
 
         let nodes = self.nodes.borrow();
-        let connections = nodes[1].get_connections();
-        // need to clone then drop here to avoid unsafe borrowing
-        let cloned_connections = connections.clone();
-        drop(connections);
-        for connection in cloned_connections {
+        let connections = nodes[1].get_connections().clone();
+        for connection in connections {
             let arc = &self.arcs.borrow()[connection];
             let arc_inverted = arc.update_for_second_phase();
             if arc_inverted {
