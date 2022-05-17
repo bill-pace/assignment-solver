@@ -115,6 +115,13 @@ impl Network {
                 // minimum requirement achieved: invert arcs that touch the sink
                 self.reset_arcs_for_second_phase();
             }
+
+            #[cfg(feature = "profiling")]
+            {
+                if current_flow % 100 == 0 {
+                    puffin::GlobalProfiler::lock().new_frame();
+                }
+            }
         }
 
         Ok(())
@@ -144,7 +151,6 @@ impl Network {
         #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
-            puffin::GlobalProfiler::lock().new_frame();
         }
 
         let nodes = self.nodes.borrow();
