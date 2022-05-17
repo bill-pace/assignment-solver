@@ -9,7 +9,7 @@ fn main() {
 
 #[test]
 #[ignore]
-fn benchmark() { // complete in 4:33 on a 3.8GHz processor
+fn test_large_dataset() { // complete in 4:48 on a 3.8GHz processor with profiling disabled
     let mut reader = reader_factory(FileType::CSV);
     let network = reader.read_file("src/benchmarkInput.csv").unwrap();
 
