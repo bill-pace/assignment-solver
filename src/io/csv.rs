@@ -110,7 +110,9 @@ impl CsvReader {
     fn process_worker(&mut self, network: &Network, worker_info: String) -> std::io::Result<()> {
         let mut affinities = Vec::new();
         let mut info = worker_info.split(",");
-        let worker_name = info.next().unwrap().trim().to_string();
+        let worker_name = info.next()
+            .expect("Problem reading worker's name!")
+            .trim().to_string();
 
         for task_id in self.tasks.iter().map(|t| t.0) {
             let val = match info.next() {

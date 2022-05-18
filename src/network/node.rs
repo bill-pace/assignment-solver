@@ -33,7 +33,7 @@ impl Node {
         }
     }
 
-    /// Create new connection
+    /// Create new connection, preventing duplicate entries
     pub fn add_connection(&self, arc_id: usize) {
         #[cfg(feature = "profiling")]
         {
@@ -53,7 +53,8 @@ impl Node {
         }
 
         let idx = self.connected_arcs.borrow().iter()
-            .position(|x| *x == arc_id).unwrap();
+            .position(|x| *x == arc_id)
+            .expect("Could not find connection to remove!");
         self.connected_arcs.borrow_mut().swap_remove(idx);
     }
 

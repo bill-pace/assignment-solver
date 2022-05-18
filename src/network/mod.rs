@@ -166,8 +166,7 @@ impl Network {
         let mut predecessors: Vec<Option<usize>> = vec![None; num_nodes];
 
         // Search for shortest path, starting from the source.
-        let mut nodes_updated = Vec::new(); // stores ID numbers
-        nodes_updated.push(0);
+        let mut nodes_updated = vec![0]; // stores ID numbers
         let mut num_iterations = 0_usize;
         while nodes_updated.len() > 0 && num_iterations < num_nodes {
             let nodes_to_search_from = nodes_updated.clone();
@@ -215,13 +214,13 @@ impl Network {
             return Err(FeasibilityError { message: "Unable to assign all workers!".to_string() });
         }
 
-        // construct path backwards
+        // construct path backwards; unwrap won't panic because the vector is never empty
         let mut path = vec![1];
         while let Some(node_id) = predecessors[*path.last().unwrap()] {
             path.push(node_id);
         }
 
-        // confirm the last node found was the source
+        // confirm the last node found was the source - if not, there's a bug
         if !(*path.last().unwrap() == 0) {
             panic!("Path does not start at source!")
         }
@@ -254,7 +253,8 @@ impl Network {
         }
 
         for node_pair in path.windows(2) {
-            let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1]).unwrap();
+            let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1])
+                .expect("Can't find an arc that's part of the path!");
             let arc_inverted = self.arcs.borrow()[arc].push_flow(self.min_flow_satisfied.get());
             if arc_inverted {
                 let nodes = self.nodes.borrow();
@@ -270,11 +270,13 @@ impl Network {
     #[cfg(test)]
     pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
         nodes.iter()
-             .map(|node| self.nodes.borrow()[*node]
-                             .get_connections().iter()
-                             .map(|connected_node|
-                                  self.arcs.borrow()[*connected_node].get_cost())
-                             .sum::<f32>())
+             .flat_map(|node|
+                 self.nodes.borrow()[*node]
+                     .get_connections()
+                     .iter()
+                     .map(|connected_node|
+                         self.arcs.borrow()[*connected_node].get_cost())
+                     .collect::<Vec<f32>>())
              .sum()
     }
 
