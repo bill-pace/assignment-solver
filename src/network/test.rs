@@ -98,8 +98,10 @@ fn test_min_cost_augmentation() {
     assert_eq!(network.nodes.borrow().len(), 17);
     assert_eq!(network.arcs.borrow().len(), 65);
     assert_eq!(network.nodes.borrow()[0].get_num_connections(), 10);
+    assert_eq!(network.nodes.borrow()[1].get_num_connections(), 1);
     network.find_min_cost_max_flow().unwrap();
     let total_cost = -network.get_cost_of_arcs_from_nodes(&task_ids);
     assert_eq!(network.nodes.borrow()[0].get_num_connections(), 0);
+    assert_eq!(network.nodes.borrow()[1].get_num_connections(), 4);
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }

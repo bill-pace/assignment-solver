@@ -321,6 +321,7 @@ impl Network {
 
         let nodes = self.nodes.borrow();
         let connections = nodes[1].get_connections().clone();
+        self.min_flow_satisfied.set(true);
         for connection in connections {
             let arc = &self.arcs.borrow()[connection];
             let arc_inverted = arc.update_for_second_phase();
