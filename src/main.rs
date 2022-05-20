@@ -1,26 +1,20 @@
-use crate::io::{FileType, Reader, reader_factory};
+use std::env;
+use crate::io::{FileType, Reader, Writer, reader_factory, writer_factory};
 
 mod network;
 mod io;
 
 fn main() {
-    println!("Hello, world!");
-}
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 3 {
+        eprintln!("Usage: {} INPUT_FILENAME OUTPUT_FILENAME", args[0]);
 
-#[test]
-#[ignore]
-fn test_large_dataset() { // complete in 4:40 on a 3.8GHz processor with profiling disabled
-    let mut reader = reader_factory(FileType::CSV);
-    let network = reader.read_file("src/benchmarkInput.csv").unwrap();
-
-    let server_addr = format!("{}:{}",
-                              local_ip_address::local_ip().unwrap().to_string(),
-                              puffin_http::DEFAULT_PORT);
-    let _puffin_server = puffin_http::Server::new(&server_addr).unwrap();
-    #[cfg(feature = "profiling")]
-    {
-        puffin::set_scopes_on(true);
+        std::process::exit(1);
     }
 
+    let mut reader = reader_factory(FileType::CSV);
+    let network = reader.read_file(args[1].to_string()).unwrap();
     network.find_min_cost_max_flow().unwrap();
+    let writer = writer_factory(FileType::CSV);
+    writer.write_file(&network, args[2].to_string()).unwrap();
 }

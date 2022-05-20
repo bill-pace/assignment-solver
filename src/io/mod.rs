@@ -20,13 +20,13 @@ pub enum FileType {
 /// A Reader will attempt to construct a Network from an input file, returning a Result that
 /// indicates whether it had any issues parsing the input file or, if not, a Network struct.
 pub(crate) trait Reader {
-    fn read_file(&mut self, filename: &str) -> std::io::Result<Network>;
+    fn read_file(&mut self, filename: String) -> std::io::Result<Network>;
 }
 
 /// A Writer takes a Network struct, extracts its worker-task assignments, and attempts to write the
 /// assignments to an output file, returning a Result that indicates whether it was successful.
 pub(crate) trait Writer {
-    fn write_file(&self, results: &Network, filename: &str) -> std::io::Result<()>;
+    fn write_file(&self, results: &Network, filename: String) -> std::io::Result<()>;
 }
 
 /// Create a struct that implements the Reader trait based on the selected file type from the

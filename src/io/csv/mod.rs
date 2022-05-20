@@ -146,7 +146,7 @@ impl CsvReader {
 
 impl Reader for CsvReader {
     /// Create file handle and pass it to the process_file method for reading
-    fn read_file(&mut self, filename: &str) -> std::io::Result<Network> {
+    fn read_file(&mut self, filename: String) -> std::io::Result<Network> {
         let f = File::open(filename)?;
         self.process_file(BufReader::new(f))
     }
@@ -211,7 +211,7 @@ impl CsvWriter {
 
 impl Writer for CsvWriter {
     /// Create new file or overwrite existing file, and pass handle to the write method
-    fn write_file(&self, results: &Network, filename: &str) -> std::io::Result<()> {
+    fn write_file(&self, results: &Network, filename: String) -> std::io::Result<()> {
         let outfile = OpenOptions::new().write(true).create(true).open(filename)?;
         self.write(results, outfile)?;
 
