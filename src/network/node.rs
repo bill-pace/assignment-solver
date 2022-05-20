@@ -24,15 +24,6 @@ impl Node {
         self.connected_arcs.borrow().len()
     }
 
-    /// Get ID of first connected arc, if any
-    #[cfg(test)]
-    pub fn get_first_connected_arc_id(&self) -> Option<usize> {
-        match self.connected_arcs.borrow().first() {
-            Some(v) => Some(*v),
-            None => None
-        }
-    }
-
     /// Create new connection, preventing duplicate entries
     pub fn add_connection(&self, arc_id: usize) {
         #[cfg(feature = "profiling")]
@@ -66,5 +57,16 @@ impl Node {
         }
 
         self.connected_arcs.borrow()
+    }
+}
+
+#[cfg(test)]
+impl Node {
+    /// Get ID of first connected arc, if any
+    pub fn get_first_connected_arc_id(&self) -> Option<usize> {
+        match self.connected_arcs.borrow().first() {
+            Some(v) => Some(*v),
+            None => None
+        }
     }
 }
