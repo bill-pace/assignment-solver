@@ -26,7 +26,7 @@ pub(crate) trait Reader {
 /// A Writer takes a Network struct, extracts its worker-task assignments, and attempts to write the
 /// assignments to an output file, returning a Result that indicates whether it was successful.
 pub(crate) trait Writer {
-    fn write_file(results: &Network, filename: &str) -> std::io::Result<()>;
+    fn write_file(&self, results: &Network, filename: &str) -> std::io::Result<()>;
 }
 
 /// Create a struct that implements the Reader trait based on the selected file type from the

@@ -134,6 +134,15 @@ impl Network {
         Ok(())
     }
 
+    /// Get the keys to the task_names HashMap
+    pub fn get_task_ids(&self) -> Vec<usize> {
+        self.task_names.borrow()
+            .keys()
+            .map(|k| *k)
+            .collect::<Vec<usize>>()
+            .clone()
+    }
+
     /// Create a new Node and add it to the network's collection of nodes.
     fn add_node(&self) -> usize {
         let new_node = node::Node::new();

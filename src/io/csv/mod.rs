@@ -1,7 +1,7 @@
 //! Structs that implement the Reader and Writer traits for CSV-formatted files.
 
 use std::cell::RefCell;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader};
 use std::iter::zip;
 use std::str::FromStr;
@@ -144,6 +144,7 @@ impl CsvReader {
 }
 
 impl Reader for CsvReader {
+    /// Create file handle and pass it to the process_file method for reading
     fn read_file(&mut self, filename: &str) -> std::io::Result<Network> {
         let f = File::open(filename)?;
         self.process_file(BufReader::new(f))
@@ -158,10 +159,21 @@ impl CsvWriter {
     pub fn new() -> CsvWriter {
         CsvWriter { }
     }
+
+    fn write(outputs: &Network, file: File) -> std::io::Result<()> {
+        let task_ids = outputs.get_task_ids();
+        
+
+        Ok(())
+    }
 }
 
 impl Writer for CsvWriter {
-    fn write_file(results: &Network, filename: &str) -> std::io::Result<()> {
+    /// Create new file or overwrite existing file, and pass handle to the write method
+    fn write_file(&self, results: &Network, filename: &str) -> std::io::Result<()> {
+        let outfile = OpenOptions::new().write(true).create(true).open(filename)?;
+        self.write(results, outfile)?;
+
         Ok(())
     }
 }
