@@ -174,7 +174,37 @@ impl CsvWriter {
         let task_names = outputs.get_task_names(&task_ids);
         writeln!(file, "{}", task_names.join(","))?;
 
+        // create vector of strings that shows worker assignments for each task
+        let assignments = self.get_assignments(&task_ids, &outputs);
+
+        // write each line of workers assigned
+        for assignment in assignments {
+            writeln!(file, "{}", assignment)?;
+        }
+
         Ok(())
+    }
+
+    fn get_assignments(&self, task_order: &Vec<usize>, outputs: &Network) -> Vec<String> {
+        let worker_assignments = outputs.get_worker_assignments();
+        let max_size = worker_assignments.values()
+            .map(|v| v.len())
+            .max().unwrap();
+        let mut assignments: Vec<Vec<String>> = vec![vec![]; max_size];
+        for task in task_order {
+            for (row, worker) in worker_assignments.get(task).unwrap().iter().enumerate() {
+                assignments[row].push(outputs.get_worker_name_from_id(*worker))
+            }
+            if worker_assignments.get(task).unwrap().len() < max_size {
+                for row in worker_assignments.get(task).unwrap().len()..max_size {
+                    assignments[row].push("".to_string());
+                }
+            }
+        }
+
+        assignments.iter()
+            .map(|v| v.join(","))
+            .collect()
     }
 }
 

@@ -167,6 +167,27 @@ impl Network {
             .sum()
     }
 
+    /// Get name of worker given an ID number
+    pub fn get_worker_name_from_id(&self, id: usize) -> String {
+        self.worker_names.borrow().get(&id).unwrap().to_string()
+    }
+
+    /// Create and return a HashMap of which workers are assigned to which tasks
+    pub fn get_worker_assignments(&self) -> HashMap<usize, Vec<usize>> {
+        let mut assignments = HashMap::new();
+        let task_ids = self.get_task_ids();
+        for task in task_ids {
+            let workers = self.nodes.borrow()[task].get_connections()
+                .iter()
+                .map(|a| self.arcs.borrow()[*a].get_end_node_id())
+                .filter(|n| *n != 1)
+                .collect();
+            assignments.insert(task, workers);
+        }
+
+        assignments
+    }
+
     /// Create a new Node and add it to the network's collection of nodes.
     fn add_node(&self) -> usize {
         let new_node = node::Node::new();
