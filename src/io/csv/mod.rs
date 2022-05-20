@@ -2,7 +2,7 @@
 
 use std::cell::RefCell;
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::iter::zip;
 use std::str::FromStr;
 use crate::io::{Reader, Writer};
@@ -160,9 +160,15 @@ impl CsvWriter {
         CsvWriter { }
     }
 
-    fn write(outputs: &Network, file: File) -> std::io::Result<()> {
+    /// Write outputs collected from a Network into a file handle, in CSV format
+    fn write(&self, outputs: &Network, mut file: File) -> std::io::Result<()> {
+        // freeze order of tasks for writing lines
         let task_ids = outputs.get_task_ids();
-        
+
+        // record final "score" of solution - sum of affinity scores over assignments that were made
+        // note that affinity scores are negated as a result of the assignment happening, so we need
+        // to negate the total score
+        writeln!(file, "Total score:,{}", -outputs.get_cost_of_arcs_from_nodes(&task_ids))?;
 
         Ok(())
     }

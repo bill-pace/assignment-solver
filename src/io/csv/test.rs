@@ -64,3 +64,12 @@ fn test_read_wrong_number_of_affinities() {
     assert_eq!(net.err().unwrap().to_string(),
                "Too few task affinities for worker Gina!");
 }
+
+#[test]
+fn test_write() {
+    let mut file_reader = CsvReader::new();
+    let network = file_reader.read_file("src/io/csv/test-data/testInput.csv").unwrap();
+    network.find_min_cost_max_flow().unwrap();
+    let file_writer = CsvWriter::new();
+    file_writer.write_file(&network, "src/io/csv/test-output/testOutput.csv").unwrap();
+}
