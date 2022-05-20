@@ -143,6 +143,30 @@ impl Network {
             .clone()
     }
 
+    /// Get names of tasks in order of requested IDs
+    pub fn get_task_names(&self, ids: &Vec<usize>) -> Vec<String> {
+        let mut names: Vec<String> = vec!();
+        for id in ids {
+            names.push(self.task_names.borrow().get(id).unwrap().to_string());
+        }
+        names
+    }
+
+    /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
+    /// task node IDs, this method will return -1 times the total cost of worker assignments, since
+    /// assigning a worker to a task involves negating the corresponding arc's cost.
+    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
+        nodes.iter()
+            .flat_map(|node|
+                self.nodes.borrow()[*node]
+                    .get_connections()
+                    .iter()
+                    .map(|connected_node|
+                        self.arcs.borrow()[*connected_node].get_cost())
+                    .collect::<Vec<f32>>())
+            .sum()
+    }
+
     /// Create a new Node and add it to the network's collection of nodes.
     fn add_node(&self) -> usize {
         let new_node = node::Node::new();
@@ -304,21 +328,6 @@ impl Network {
 
 #[cfg(test)]
 impl Network {
-    /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
-    /// task node IDs, this method will return -1 times the total cost of worker assignments, since
-    /// assigning a worker to a task involves negating the corresponding arc's cost.
-    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
-        nodes.iter()
-            .flat_map(|node|
-                self.nodes.borrow()[*node]
-                    .get_connections()
-                    .iter()
-                    .map(|connected_node|
-                        self.arcs.borrow()[*connected_node].get_cost())
-                    .collect::<Vec<f32>>())
-            .sum()
-    }
-
     /// Get total distance of a path by adding the costs of each arc in the path.
     fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
         path.windows(2)

@@ -170,6 +170,10 @@ impl CsvWriter {
         // to negate the total score
         writeln!(file, "Total score:,{}", -outputs.get_cost_of_arcs_from_nodes(&task_ids))?;
 
+        // record task names
+        let task_names = outputs.get_task_names(&task_ids);
+        writeln!(file, "{}", task_names.join(","))?;
+
         Ok(())
     }
 }
