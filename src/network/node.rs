@@ -49,7 +49,7 @@ impl Node {
         self.connected_arcs.borrow_mut().swap_remove(idx);
     }
 
-    /// Returns a clone of the list of connected arc IDs.
+    /// Returns a reference to the list of connected arc IDs.
     pub fn get_connections(&self) -> Ref<Vec<usize>> {
         #[cfg(feature = "profiling")]
         {

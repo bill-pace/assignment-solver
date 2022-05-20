@@ -339,12 +339,9 @@ impl Network {
             puffin::profile_function!();
         }
 
-        for connection in self.nodes.borrow()[start_node_id].get_connections().iter() {
-            if self.arcs.borrow()[*connection].get_end_node_id() == end_node_id {
-                return Some(*connection);
-            }
-        }
-        None
+        self.nodes.borrow()[start_node_id].get_connections().iter()
+            .map(|c| *c)
+            .find(|c| self.arcs.borrow()[*c].get_end_node_id() == end_node_id)
     }
 }
 
