@@ -8,6 +8,7 @@
 mod node;
 mod arc;
 mod feasibility_error;
+#[cfg(test)]
 mod test;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;

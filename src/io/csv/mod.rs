@@ -7,6 +7,7 @@ use std::iter::zip;
 use std::str::FromStr;
 use crate::io::{Reader, Writer};
 use crate::network::Network;
+#[cfg(test)]
 mod test;
 
 /// A reader for CSV-formatted input data. It will populate its lists of task and worker IDs as it
