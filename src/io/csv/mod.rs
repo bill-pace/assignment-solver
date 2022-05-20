@@ -1,5 +1,6 @@
 //! Structs that implement the Reader and Writer traits for CSV-formatted files.
 
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::zip;
@@ -27,14 +28,14 @@ mod test;
 /// negative numbers, and if left blank will represent an unacceptable assignment (e.g. the worker
 /// cannot do the corresponding task).
 pub struct CsvReader {
-    tasks: Vec<(usize, String)>,
-    workers: Vec<(usize, String)>
+    // keep list of task IDs to pair up with affinities when reading worker data
+    tasks: RefCell<Vec<usize>>
 }
 
 impl CsvReader {
     /// Create a new CsvReader struct
     pub fn new() -> CsvReader {
-        CsvReader { tasks: Vec::new(), workers: Vec::new() }
+        CsvReader { tasks: RefCell::new(Vec::new()) }
     }
 
     /// Read a provided file line by line to construct a Network from it
@@ -101,8 +102,9 @@ impl CsvReader {
                                                    format!(r#"Expected integer maximum, found "{}"; error: {}"#,
                                                            task_info.1.1, err)))
             };
-            let task_id = network.add_task(minimum, maximum);
-            self.tasks.push((task_id, task_info.0.trim().to_string()));
+            let name = task_info.0.trim().to_string();
+            let task_id = network.add_task(name, minimum, maximum);
+            self.tasks.borrow_mut().push(task_id);
         }
         Ok(())
     }
@@ -115,7 +117,7 @@ impl CsvReader {
             .expect("Problem reading worker's name!")
             .trim().to_string();
 
-        for task_id in self.tasks.iter().map(|t| t.0) {
+        for task_id in self.tasks.borrow().iter() {
             let val = match info.next() {
                 Some(v) => v,
                 None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
@@ -131,12 +133,12 @@ impl CsvReader {
                                                        format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#,
                                                                val, err)))
                 };
-                affinities.push((task_id, aff)); // task ID stored in self.tasks
+                affinities.push((*task_id, aff)); // task ID stored in self.tasks
             }
         }
 
-        let worker_id = network.add_worker(&affinities);
-        self.workers.push((worker_id, worker_name));
+        network.add_worker(worker_name, &affinities);
+
         Ok(())
     }
 }

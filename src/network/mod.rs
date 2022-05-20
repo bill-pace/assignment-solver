@@ -10,6 +10,7 @@ mod arc;
 mod feasibility_error;
 mod test;
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use crate::network::feasibility_error::FeasibilityError;
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
@@ -19,7 +20,9 @@ pub(crate) struct Network {
     max_flow_amount: Cell<usize>,
     num_tasks: Cell<usize>,
     nodes: RefCell<Vec<node::Node>>,
-    arcs: RefCell<Vec<arc::Arc>>
+    arcs: RefCell<Vec<arc::Arc>>,
+    task_names: RefCell<HashMap<usize, String>>,
+    worker_names: RefCell<HashMap<usize, String>>
 }
 
 impl Network {
@@ -32,7 +35,9 @@ impl Network {
             max_flow_amount: Cell::new(0),
             num_tasks: Cell::new(0),
             nodes: RefCell::new(Vec::new()),
-            arcs: RefCell::new(Vec::new())
+            arcs: RefCell::new(Vec::new()),
+            task_names: RefCell::new(HashMap::new()),
+            worker_names: RefCell::new(HashMap::new())
         };
         new_network.add_node(); // flow source, id 0
         new_network.add_node(); // flow sink, id 1
@@ -41,7 +46,7 @@ impl Network {
 
     /// Add a new node to the network representing a task, and connect that node to the sink. Return
     /// the task's ID number to look it back up after assignment is complete.
-    pub fn add_task(&self, min_workers: usize, max_workers: usize) -> usize {
+    pub fn add_task(&self, name: String, min_workers: usize, max_workers: usize) -> usize {
         let task_id = self.add_node();
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
@@ -56,6 +61,7 @@ impl Network {
             self.add_arc(1, task_id, 0.0,
                          min_workers, max_workers);
         }
+        self.task_names.borrow_mut().insert(task_id, name);
 
         task_id
     }
@@ -63,7 +69,7 @@ impl Network {
     /// Add a new node to the network representing a worker, connect the source to the new node, and
     /// connect the new node to all tasks the worker can perform. As with add_task, return the
     /// worker node's ID.
-    pub fn add_worker(&self, task_affinity: &Vec<(usize, f32)>) -> usize {
+    pub fn add_worker(&self, name: String, task_affinity: &Vec<(usize, f32)>) {
         let worker_id = self.add_node();
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
         // the flow bound is 1 for both phases of the min cost augmentation
@@ -74,7 +80,7 @@ impl Network {
             self.add_arc(worker_id, affinity.0, affinity.1,
                          1, 1);
         }
-        worker_id
+        self.worker_names.borrow_mut().insert(worker_id, name);
     }
 
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a

@@ -28,12 +28,14 @@ fn test_push_flow() {
 fn test_shortest_path() {
     // setup
     let network = Network::new();
-    let mut task_ids = Vec::new();
+    let task_ids = vec![2, 3];
     // add task 1
-    task_ids.push(network.add_task(1, 1));
-    task_ids.push(network.add_task(1, 1));
-    network.add_worker(&vec![(task_ids[0], 2.5_f32), (task_ids[1], 3.0_f32)]);
-    network.add_worker(&vec![(task_ids[0], 2.6_f32), (task_ids[1], 1.9_f32)]);
+    network.add_task("Task 1".to_string(), 1, 1);
+    network.add_task("Task 2".to_string(),1, 1);
+    network.add_worker("Worker 1".to_string(),
+                       &vec![(task_ids[0], 2.5_f32), (task_ids[1], 3.0_f32)]);
+    network.add_worker("Worker 2".to_string(),
+                       &vec![(task_ids[0], 2.6_f32), (task_ids[1], 1.9_f32)]);
 
     // test
     assert_eq!(network.nodes.borrow().len(), 6);
@@ -55,63 +57,42 @@ fn test_shortest_path() {
 fn test_min_cost_augmentation() {
     // setup
     let network = Network::new();
-    let mut task_ids = Vec::new();
-    let mut worker_ids = Vec::new();
-    task_ids.push(network.add_task(1, 2));
-    task_ids.push(network.add_task(2, 2));
-    task_ids.push(network.add_task(0, 2));
-    task_ids.push(network.add_task(2, 3));
-    task_ids.push(network.add_task(1, 2));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 3.0),
-                                             (task_ids[1], 4.0),
-                                             (task_ids[2], 1.5),
-                                             (task_ids[3], 1.5),
-                                             (task_ids[4], 5.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 4.0),
-                                             (task_ids[1], 3.0),
-                                             (task_ids[2], 6.0),
-                                             (task_ids[3], 2.0),
-                                             (task_ids[4], 1.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 2.0),
-                                             (task_ids[1], 5.0),
-                                             (task_ids[2], 4.0),
-                                             (task_ids[3], 1.0),
-                                             (task_ids[4], 3.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 3.0),
-                                             (task_ids[1], 5.0),
-                                             (task_ids[2], 1.0),
-                                             (task_ids[3], 4.0),
-                                             (task_ids[4], 0.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 1.0),
-                                             (task_ids[1], 4.0),
-                                             (task_ids[2], 2.0),
-                                             (task_ids[3], 3.0),
-                                             (task_ids[4], 5.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 5.0),
-                                             (task_ids[1], 3.0),
-                                             (task_ids[2], 1.0),
-                                             (task_ids[3], 4.0),
-                                             (task_ids[4], 2.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 1.0),
-                                             (task_ids[1], 3.0),
-                                             (task_ids[2], 5.0),
-                                             (task_ids[3], 4.0),
-                                             (task_ids[4], 2.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 4.0),
-                                             (task_ids[1], 3.0),
-                                             (task_ids[2], 5.0),
-                                             (task_ids[3], 1.0),
-                                             (task_ids[4], 2.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 5.0),
-                                             (task_ids[1], 2.0),
-                                             (task_ids[2], 3.0),
-                                             (task_ids[3], 4.0),
-                                             (task_ids[4], 1.0)]));
-    worker_ids.push(network.add_worker(&vec![(task_ids[0], 2.0),
-                                             (task_ids[1], 5.0),
-                                             (task_ids[2], 1.0),
-                                             (task_ids[3], 3.0),
-                                             (task_ids[4], 4.0)]));
+    let task_ids: Vec<usize> = vec![2, 3, 4, 5, 6];
+    network.add_task("Task 1".to_string(), 1, 2);
+    network.add_task("Task 2".to_string(), 2, 2);
+    network.add_task("Task 3".to_string(), 0, 2);
+    network.add_task("Task 4".to_string(), 2, 3);
+    network.add_task("Task 5".to_string(), 1, 2);
+    network.add_worker("Worker 1".to_string(),
+                       &vec![(task_ids[0], 3.0), (task_ids[1], 4.0), (task_ids[2], 1.5),
+                             (task_ids[3], 1.5), (task_ids[4], 5.0)]);
+    network.add_worker("Worker 2".to_string(),
+                       &vec![(task_ids[0], 4.0), (task_ids[1], 3.0), (task_ids[2], 6.0),
+                             (task_ids[3], 2.0), (task_ids[4], 1.0)]);
+    network.add_worker("Worker 3".to_string(),
+                       &vec![(task_ids[0], 2.0), (task_ids[1], 5.0), (task_ids[2], 4.0),
+                             (task_ids[3], 1.0), (task_ids[4], 3.0)]);
+    network.add_worker("Worker 4".to_string(),
+                       &vec![(task_ids[0], 3.0), (task_ids[1], 5.0), (task_ids[2], 1.0),
+                             (task_ids[3], 4.0), (task_ids[4], 0.0)]);
+    network.add_worker("Worker 5".to_string(),
+                       &vec![(task_ids[0], 1.0), (task_ids[1], 4.0), (task_ids[2], 2.0),
+                             (task_ids[3], 3.0), (task_ids[4], 5.0)]);
+    network.add_worker("Worker 6".to_string(),
+                       &vec![(task_ids[0], 5.0), (task_ids[1], 3.0), (task_ids[2], 1.0),
+                             (task_ids[3], 4.0), (task_ids[4], 2.0)]);
+    network.add_worker("Worker 7".to_string(),
+                       &vec![(task_ids[0], 1.0), (task_ids[1], 3.0), (task_ids[2], 5.0),
+                             (task_ids[3], 4.0), (task_ids[4], 2.0)]);
+    network.add_worker("Worker 8".to_string(),
+                       &vec![(task_ids[0], 4.0), (task_ids[1], 3.0), (task_ids[2], 5.0),
+                             (task_ids[3], 1.0), (task_ids[4], 2.0)]);
+    network.add_worker("Worker 9".to_string(),
+                       &vec![(task_ids[0], 5.0), (task_ids[1], 2.0), (task_ids[2], 3.0),
+                             (task_ids[3], 4.0), (task_ids[4], 1.0)]);
+    network.add_worker("Worker 10".to_string(),
+                       &vec![(task_ids[0], 2.0), (task_ids[1], 5.0), (task_ids[2], 1.0),
+                             (task_ids[3], 3.0), (task_ids[4], 4.0)]);
 
     // test
     assert_eq!(network.nodes.borrow().len(), 17);
