@@ -15,7 +15,6 @@ profiling = []
 bencher = "0.1.5"
 local-ip-address = "0.4.4"
 puffin = "0.13.2"
-puffin_http = "0.10.0"
 
 [[bench]]
 name = "data_structures"
