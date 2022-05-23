@@ -225,6 +225,8 @@ impl Network {
         // from zero to enable using them as indices in these vectors.
         let mut distances = vec![f32::INFINITY; num_nodes];
         distances[0] = 0.0;
+        // TODO: refactor this to be arc IDs rather than node IDs to circumvent the need to lookup
+        //       when pushing flow
         let mut predecessors: Vec<Option<usize>> = vec![None; num_nodes];
 
         // Search for shortest path, starting from the source.
