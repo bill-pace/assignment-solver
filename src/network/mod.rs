@@ -212,7 +212,8 @@ impl Network {
     }
 
     /// Find the shortest path from the network's source node to its sink node, using an adaptation
-    /// of the Bellman-Ford algorithm.
+    /// of the Bellman-Ford algorithm. Assuming a path is found, it will be returned as a vector of
+    /// arc IDs in reverse order (i.e. starting with the arc that leads into the sink).
     fn find_shortest_path(&self) -> Result<Vec<usize>, FeasibilityError> {
         #[cfg(feature = "profiling")]
         {
@@ -253,7 +254,7 @@ impl Network {
                     if dist_to_here + dist_from_here < cur_dist {
                         // found a shorter path to the connected node
                         distances[connected_node_id] = dist_to_here + dist_from_here;
-                        predecessors[connected_node_id] = Some(*node_id);
+                        predecessors[connected_node_id] = Some(*connected_arc_id);
                         if connected_node_id != 1 {
                             // omit arcs leaving the sink, as these arcs cannot be part of a path to
                             // the sink (else it would be a walk instead of a path) and their
@@ -280,18 +281,17 @@ impl Network {
             return Err(FeasibilityError { message: "Unable to assign all workers!".to_string() });
         }
 
-        // construct path backwards; unwrap won't panic because the vector is never empty
-        let mut path = vec![1];
-        while let Some(node_id) = predecessors[*path.last().unwrap()] {
-            path.push(node_id);
+        // construct path backwards
+        let mut path = vec![predecessors[1].unwrap()];
+        while let Some(arc_id) = predecessors[arcs[*path.last().unwrap()].get_start_node_id()] {
+            path.push(arc_id);
         }
 
         // confirm the last node found was the source - if not, there's a bug
-        if !(*path.last().unwrap() == 0) {
+        if !(arcs[*path.last().unwrap()].get_start_node_id() == 0) {
             panic!("Path does not start at source!")
         }
 
-        path.reverse();
         Ok(path)
     }
 
@@ -302,14 +302,13 @@ impl Network {
             puffin::profile_function!();
         }
 
-        for node_pair in path.windows(2) {
-            let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1])
-                .expect("Can't find an arc that's part of the path!");
-            let arc_inverted = self.arcs.borrow()[arc].push_flow(self.min_flow_satisfied.get());
+        for arc_id in path {
+            let arc = &self.arcs.borrow()[*arc_id];
+            let arc_inverted = arc.push_flow(self.min_flow_satisfied.get());
             if arc_inverted {
                 let nodes = self.nodes.borrow();
-                nodes[node_pair[0]].remove_connection(arc);
-                nodes[node_pair[1]].add_connection(arc);
+                nodes[arc.get_start_node_id()].add_connection(*arc_id);
+                nodes[arc.get_end_node_id()].remove_connection(*arc_id);
             }
         }
     }
@@ -336,6 +335,16 @@ impl Network {
             }
         }
     }
+}
+
+#[cfg(test)]
+impl Network {
+    /// Get total distance of a path by adding the costs of each arc in the path.
+    fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
+        path.iter()
+            .map(|arc_id| self.arcs.borrow()[*arc_id].get_cost())
+            .sum()
+    }
 
     /// Find the ID of the arc that connects the two identified nodes, if any
     fn find_connecting_arc_id(&self, start_node_id: usize, end_node_id: usize) -> Option<usize> {
@@ -347,23 +356,5 @@ impl Network {
         self.nodes.borrow()[start_node_id].get_connections().iter()
             .map(|c| *c)
             .find(|c| self.arcs.borrow()[*c].get_end_node_id() == end_node_id)
-    }
-}
-
-#[cfg(test)]
-impl Network {
-    /// Get total distance of a path by adding the costs of each arc in the path.
-    fn get_path_cost(&self, path: &Vec<usize>) -> f32 {
-        path.windows(2)
-            .map(|node_pair| {
-                let arcs = self.arcs.borrow();
-                for arc_id in self.nodes.borrow()[node_pair[0]].get_connections().iter() {
-                    if arcs[*arc_id].get_end_node_id() == node_pair[1] {
-                        return arcs[*arc_id].get_cost();
-                    }
-                }
-                panic!("No arc found from {} to {}", node_pair[0], node_pair[1])
-            })
-            .sum()
     }
 }
