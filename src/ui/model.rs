@@ -4,22 +4,28 @@ use crate::network::Network;
 use crate::ui::presenter::Presenter;
 
 pub struct Model {
-    reader: RefCell<Box<dyn Reader>>,
-    writer: Box<dyn Writer>,
+    reader: RefCell<Option<Box<dyn Reader>>>,
+    writer: RefCell<Option<Box<dyn Writer>>>,
     network: Network
 }
 
 impl Model {
-    pub fn new(in_file_type: FileType, out_file_type: FileType) -> Self {
+    pub fn new() -> Self {
         Model {
-            reader: RefCell::new(Box::new(reader_factory(in_file_type))),
-            writer: Box::new(writer_factory(out_file_type)),
+            reader: RefCell::new(None),
+            writer: RefCell::new(None),
             network: Network::new()
         }
     }
 
+    pub fn set_file_types(&self, in_file_type: FileType, out_file_type: FileType) {
+        self.reader.replace(Some(Box::new(reader_factory(in_file_type))));
+        self.writer.replace(Some(Box::new(writer_factory(out_file_type))));
+    }
+
     pub fn assign_workers(&self, infile: String, outfile: String, pres: &Presenter) {
-        let read_result = self.reader.borrow_mut().read_file(infile, &self.network);
+        let read_result = self.reader.borrow_mut().as_mut().unwrap()
+            .read_file(infile, &self.network);
         if read_result.is_err() {
             pres.report_error(read_result.err().unwrap().to_string());
             return;
@@ -32,7 +38,8 @@ impl Model {
             return;
         }
 
-        let write_result = self.writer.write_file(&self.network, outfile);
+        let write_result = self.writer.borrow().as_ref().unwrap()
+            .write_file(&self.network, outfile);
         if write_result.is_err() {
             pres.report_error(write_result.err().unwrap().to_string());
             return;

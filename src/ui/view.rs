@@ -1,5 +1,4 @@
 use eframe::egui;
-use crate::io::{Reader, Writer};
 
 pub struct View {
     infile: Option<String>,
@@ -37,10 +36,10 @@ impl eframe::App for View {
             ui.label("Select an input file:");
             if ui.button("Select input file…").clicked() {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.input_filename = Some(path.display().to_string());
+                    self.infile = Some(path.display().to_string());
                 }
             }
-            if let Some(picked_path) = &self.input_filename {
+            if let Some(picked_path) = &self.infile {
                 ui.horizontal(|ui| {
                     ui.label("Picked file:");
                     ui.monospace(picked_path);
@@ -50,10 +49,10 @@ impl eframe::App for View {
             ui.label("Select an output file:");
             if ui.button("Select output file…").clicked() {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.output_filename = Some(path.display().to_string());
+                    self.outfile = Some(path.display().to_string());
                 }
             }
-            if let Some(picked_path) = &self.output_filename {
+            if let Some(picked_path) = &self.outfile {
                 ui.horizontal(|ui| {
                     ui.label("Picked file:");
                     ui.monospace(picked_path);

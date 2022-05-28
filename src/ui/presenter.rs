@@ -3,7 +3,7 @@ use crate::ui::view::View;
 
 pub struct Presenter {
     model: Model,
-    view: View
+    pub view: View
 }
 
 impl Presenter {
