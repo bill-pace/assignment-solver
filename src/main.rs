@@ -3,5 +3,14 @@ mod io;
 mod ui;
 
 fn main() {
-    ui::launch_gui();
+    let options = eframe::NativeOptions {
+        drag_and_drop_support: true,
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Assignment Solver",
+        options,
+        Box::new(|_cc| Box::new(ui::MyApp::default())),
+    );
 }

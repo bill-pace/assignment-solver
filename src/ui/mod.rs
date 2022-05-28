@@ -1,19 +1,7 @@
 use eframe::egui;
 
-pub fn launch_gui() {
-    let options = eframe::NativeOptions {
-        drag_and_drop_support: true,
-        ..Default::default()
-    };
-    eframe::run_native(
-        "Native file dialogs and drag-and-drop files",
-        options,
-        Box::new(|_cc| Box::new(MyApp::default())),
-    );
-}
-
 #[derive(Default)]
-struct MyApp {
+pub struct MyApp {
     dropped_files: Vec<egui::DroppedFile>,
     picked_path: Option<String>,
 }
