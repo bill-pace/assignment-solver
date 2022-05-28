@@ -1,11 +1,12 @@
 use std::cell::Cell;
 use eframe::egui;
-use crate::ui::presenter::Presenter;
+use eframe::egui::panel::TopBottomSide;
 
 pub struct View {
     infile: Option<String>,
     outfile: Option<String>,
-    status: Cell<Option<String>>
+    status: Cell<Option<String>>,
+    pub(crate) begin_solving: bool
 }
 
 impl View {
@@ -13,7 +14,8 @@ impl View {
         View {
             infile: None,
             outfile: None,
-            status: Cell::new(None)
+            status: Cell::new(None),
+            begin_solving: false
         }
     }
 
@@ -41,33 +43,46 @@ impl View {
         self.status.set(Some("Success! Results have been saved.".to_string()));
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Select an input file:");
-            if ui.button("Select input file…").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.infile = Some(path.display().to_string());
+    pub fn update_input_output(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
+            .show(ctx, |ui| {
+                ui.label("Select an input file:");
+                if ui.button("Select input file…").clicked() {
+                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                        self.infile = Some(path.display().to_string());
+                    }
                 }
-            }
-            if let Some(picked_path) = &self.infile {
-                ui.horizontal(|ui| {
-                    ui.label("Picked file:");
-                    ui.monospace(picked_path);
-                });
-            }
+                if let Some(picked_path) = &self.infile {
+                    ui.horizontal(|ui| {
+                        ui.label("Picked file:");
+                        ui.monospace(picked_path);
+                    });
+                }
 
-            ui.label("Select an output file:");
-            if ui.button("Select output file…").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.outfile = Some(path.display().to_string());
+                ui.label("Select an output file:");
+                if ui.button("Select output file…").clicked() {
+                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                        self.outfile = Some(path.display().to_string());
+                    }
                 }
+                if let Some(picked_path) = &self.outfile {
+                    ui.horizontal(|ui| {
+                        ui.label("Picked file:");
+                        ui.monospace(picked_path);
+                    });
+                }
+            });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            if ui.button("Click here to solve").clicked() {
+                self.begin_solving = true;
             }
-            if let Some(picked_path) = &self.outfile {
-                ui.horizontal(|ui| {
-                    ui.label("Picked file:");
-                    ui.monospace(picked_path);
-                });
-            }
+        });
+    }
+
+    pub fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.label("Running!");
         });
     }
 }

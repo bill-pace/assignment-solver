@@ -25,6 +25,10 @@ impl Model {
         self.writer.replace(Some(Box::new(writer_factory(out_file_type))));
     }
 
+    pub fn is_solving(&self) -> bool {
+        self.solving.get()
+    }
+
     pub fn assign_workers(&self, infile: String, outfile: String, pres: &Presenter) {
         self.solving.set(true);
         let read_result = self.reader.borrow_mut().as_mut().unwrap()
