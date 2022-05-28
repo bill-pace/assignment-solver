@@ -88,23 +88,28 @@ impl CsvReader {
                                            a minimum and a maximum number of workers specified."));
         }
 
-        for task_info in zip(names, zip(minima, maxima)).skip(1) {
-            let minimum = match usize::from_str(task_info.1.0.trim()) {
+        for (name, (minimum, maximum)) in zip(names, zip(minima, maxima)).skip(1) {
+            let lower = match usize::from_str(minimum.trim()) {
                 Ok(m) => m,
                 Err(err) =>
                     return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
                                                    format!(r#"Expected integer minimum, found "{}"; error: {}"#,
-                                                           task_info.1.0, err)))
+                                                           minimum, err)))
             };
-            let maximum = match usize::from_str(task_info.1.1.trim()) {
+            let upper = match usize::from_str(maximum.trim()) {
                 Ok(m) => m,
                 Err(err) =>
                     return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
                                                    format!(r#"Expected integer maximum, found "{}"; error: {}"#,
-                                                           task_info.1.1, err)))
+                                                           maximum, err)))
             };
-            let name = task_info.0.trim().to_string();
-            let task_id = network.add_task(name, minimum, maximum);
+            if upper < lower {
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
+                                               format!("Maximum cannot be less than minimum!")));
+            }
+
+            let task_name = name.trim().to_string();
+            let task_id = network.add_task(task_name, lower, upper);
             self.tasks.borrow_mut().push(task_id);
         }
         Ok(())

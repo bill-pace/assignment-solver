@@ -38,6 +38,15 @@ fn test_read_bad_task_max() {
 }
 
 #[test]
+fn test_read_max_lt_min() {
+    let mut file_reader = CsvReader::new();
+    let net = file_reader.read_file("src/io/csv/test-data/inputMaxLtMin.csv".to_string());
+    assert!(net.is_err());
+    assert_eq!(net.err().unwrap().to_string(),
+               "Maximum cannot be less than minimum!");
+}
+
+#[test]
 fn test_read_bad_worker_affinity() {
     let mut file_reader = CsvReader::new();
     let net = file_reader.read_file("src/io/csv/test-data/inputBadAffinity.csv".to_string());
