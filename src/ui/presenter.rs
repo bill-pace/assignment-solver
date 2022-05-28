@@ -1,9 +1,10 @@
+use eframe::egui;
 use crate::ui::model::Model;
 use crate::ui::view::View;
 
 pub struct Presenter {
     model: Model,
-    pub view: View
+    view: View
 }
 
 impl Presenter {
@@ -35,5 +36,11 @@ impl Presenter {
 
     pub fn report_success(&self) {
 
+    }
+}
+
+impl eframe::App for Presenter {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.view.update(ctx, _frame)
     }
 }

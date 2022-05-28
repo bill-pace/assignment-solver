@@ -28,10 +28,8 @@ impl View {
                                             "You must select an output file!"))
         }
     }
-}
 
-impl eframe::App for View {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("Select an input file:");
             if ui.button("Select input file…").clicked() {

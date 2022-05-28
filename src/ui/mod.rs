@@ -15,6 +15,6 @@ pub fn launch_ui() {
     eframe::run_native(
         "Assignment Solver",
         options,
-        Box::new(|_cc| Box::new(pres.view)),
+        Box::new(|_cc| Box::new(pres)),
     );
 }
