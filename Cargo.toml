@@ -9,6 +9,8 @@ edition = "2021"
 profiling = ["puffin"]
 
 [dependencies]
+eframe = "0.18.0"
+rfd = "0.8.2"
 puffin = { version = "0.13.2", optional = true }
 
 [dev-dependencies]
