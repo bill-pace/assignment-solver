@@ -1,10 +1,11 @@
+use std::cell::Cell;
 use eframe::egui;
 use crate::ui::presenter::Presenter;
 
 pub struct View {
     infile: Option<String>,
     outfile: Option<String>,
-    status: Option<String>
+    status: Cell<Option<String>>
 }
 
 impl View {
@@ -12,7 +13,7 @@ impl View {
         View {
             infile: None,
             outfile: None,
-            status: None
+            status: Cell::new(None)
         }
     }
 
@@ -32,12 +33,12 @@ impl View {
         }
     }
 
-    pub fn report_error(&mut self, err: String) {
-        self.status = Some(err);
+    pub fn report_error(&self, err: String) {
+        self.status.set(Some(err));
     }
 
-    pub fn report_success(&mut self) {
-        self.status = Some("Success! Results have been saved.".to_string());
+    pub fn report_success(&self) {
+        self.status.set(Some("Success! Results have been saved.".to_string()));
     }
 
     pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
