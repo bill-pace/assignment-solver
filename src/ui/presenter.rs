@@ -31,11 +31,11 @@ impl Presenter {
     }
 
     pub fn report_error(&self, err: String) {
-
+        self.view.report_error(err);
     }
 
     pub fn report_success(&self) {
-
+        self.view.report_success();
     }
 }
 

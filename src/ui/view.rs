@@ -1,15 +1,18 @@
 use eframe::egui;
+use crate::ui::presenter::Presenter;
 
 pub struct View {
     infile: Option<String>,
-    outfile: Option<String>
+    outfile: Option<String>,
+    status: Option<String>
 }
 
 impl View {
     pub fn new() -> Self {
         View {
             infile: None,
-            outfile: None
+            outfile: None,
+            status: None
         }
     }
 
@@ -27,6 +30,14 @@ impl View {
             None => Err(std::io::Error::new(std::io::ErrorKind::NotFound,
                                             "You must select an output file!"))
         }
+    }
+
+    pub fn report_error(&mut self, err: String) {
+        self.status = Some(err);
+    }
+
+    pub fn report_success(&mut self) {
+        self.status = Some("Success! Results have been saved.".to_string());
     }
 
     pub fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
