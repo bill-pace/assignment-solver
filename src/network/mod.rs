@@ -113,7 +113,6 @@ impl Network {
         while nodes[0].get_num_connections() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
-            // TODO: add shortcut based on lowest worker affinity
             let path = self.find_shortest_path()?;
 
             // path found, push flow and increment the amount of flow
@@ -225,8 +224,6 @@ impl Network {
         // from zero to enable using them as indices in these vectors.
         let mut distances = vec![f32::INFINITY; num_nodes];
         distances[0] = 0.0;
-        // TODO: refactor this to be arc IDs rather than node IDs to circumvent the need to lookup
-        //       when pushing flow
         let mut predecessors: Vec<Option<usize>> = vec![None; num_nodes];
 
         // Search for shortest path, starting from the source.
