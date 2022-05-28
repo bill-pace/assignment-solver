@@ -13,6 +13,7 @@ mod test;
 /// A reader for CSV-formatted input data. It will populate its lists of task and worker IDs as it
 /// reads the file and passes input from that file into the network struct it helps build.
 /// CSV inputs should be structured as follows:
+///     --------------|-----------------|-----------------|-----------------|----
 ///       <ignored>   |   Task Name 1   |   Task Name 2   |   Task Name 3   | ...
 ///     --------------|-----------------|-----------------|-----------------|----
 ///       <ignored>   |   Task 1 Min    |   Task 2 Min    |   Task 3 Min    | ...
@@ -157,11 +158,24 @@ impl Reader for CsvReader {
     }
 }
 
+/// A writer for CSV-formatted output data. Given a network that contains its min cost max flow,
+/// a CSV writer will construct and write out a table that looks like this:
+///     ----------------|-----------------|-----------------|-----------------|----
+///       Total score:  |      <f32>      |                 |                 |----
+///     ----------------|-----------------|-----------------|-----------------|----
+///       Task Name 1   |   Task Name 2   |   Task Name 3   |   Task Name 4   | ...
+///     ----------------|-----------------|-----------------|-----------------|----
+///      Worker 1 Name  |  Worker 3 Name  |  Worker 5 Name  |  Worker 7 Name  | ...
+///     ----------------|-----------------|-----------------|-----------------|----
+///      Worker 2 Name  |  Worker 4 Name  |  Worker 6 Name  |  Worker 8 Name  | ...
+///     ----------------|-----------------|-----------------|-----------------|----
+///     ...
 pub struct CsvWriter {
 
 }
 
 impl CsvWriter {
+    /// Create a new CsvWriter
     pub fn new() -> CsvWriter {
         CsvWriter { }
     }
@@ -191,6 +205,7 @@ impl CsvWriter {
         Ok(())
     }
 
+    /// Create a vector of comma-delimited strings from the worker-task assignments in a network
     fn get_assignments(&self, task_order: &Vec<usize>, outputs: &Network) -> Vec<String> {
         let worker_assignments = outputs.get_worker_assignments();
         let max_size = worker_assignments.values()
