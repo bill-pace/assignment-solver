@@ -81,10 +81,10 @@ impl Presenter {
         };
 
         let status_tracker = self.cur_status.clone();
-        std::thread::spawn(move || make_assignment(Model::new(FileType::CSV, FileType::CSV),
-                                                   infile,
-                                                   outfile,
-                                                   status_tracker));
+        std::thread::spawn(move || {
+            let model = Model::new(FileType::CSV, FileType::CSV);
+            model.assign_workers(infile, outfile, status_tracker);
+        });
     }
 }
 
@@ -105,9 +105,4 @@ impl eframe::App for Presenter {
             }
         }
     }
-}
-
-fn make_assignment(model: Model, input_file: String, output_file: String,
-                   status_tracker: Arc<CurrentStatus>) {
-    model.assign_workers(input_file, output_file, status_tracker);
 }
