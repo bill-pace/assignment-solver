@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 mod model;
-mod view;
 mod presenter;
 
 #[derive(Clone)]
@@ -33,8 +32,7 @@ impl CurrentStatus {
 }
 
 pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
-    let view = view::View::new();
-    let pres = presenter::Presenter::new(view, status_tracker);
+    let pres = presenter::Presenter::new(status_tracker);
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
