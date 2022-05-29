@@ -38,7 +38,7 @@ impl Presenter {
 
                 ui.label("Select an output file:");
                 if ui.button("Select output file…").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                    if let Some(path) = rfd::FileDialog::new().save_file() {
                         self.outfile = Some(path.display().to_string());
                     }
                 }
