@@ -71,6 +71,23 @@ impl Presenter {
         });
     }
 
+    fn update_success(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
+            .show(ctx, |ui| {
+                ui.label("Success! Output has been saved to disk.")
+            });
+        self.update_not_started(ctx, _frame);
+    }
+
+    fn update_failure(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, msg: String) {
+        egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
+            .show(ctx, |ui| {
+                ui.label("Failure! The solver encountered a problem:");
+                ui.label(msg);
+            });
+        self.update_not_started(ctx, _frame);
+    }
+
     fn start_solver_thread(&self) {
         let infile = match &self.infile {
             Some(name) => name.to_string(),
@@ -99,16 +116,16 @@ impl eframe::App for Presenter {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         match self.cur_status.get_status() {
             Status::Success => {
-                self.update_not_started(ctx, _frame)
+                self.update_success(ctx, _frame);
             },
             Status::InProgress(pct) => {
-                self.update_in_progress(ctx, _frame, pct)
+                self.update_in_progress(ctx, _frame, pct);
             },
             Status::Failure(msg) => {
-                self.update_not_started(ctx, _frame)
+                self.update_failure(ctx, _frame, msg);
             },
             Status::NotStarted => {
-                self.update_not_started(ctx, _frame)
+                self.update_not_started(ctx, _frame);
             }
         }
     }
