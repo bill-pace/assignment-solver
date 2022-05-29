@@ -33,11 +33,12 @@ impl Presenter {
                 return;
             }
         };
+
         let status_tracker = self.cur_status.clone();
-        std::thread::spawn(|| make_assignment(Model::new(),
-                                              infile,
-                                              outfile,
-                                              status_tracker));
+        std::thread::spawn(move || make_assignment(Model::new(FileType::CSV, FileType::CSV),
+                                                   infile,
+                                                   outfile,
+                                                   status_tracker));
     }
 }
 
