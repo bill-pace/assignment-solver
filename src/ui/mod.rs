@@ -34,8 +34,7 @@ impl CurrentStatus {
 
 pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
     let view = view::View::new();
-    let model = model::Model::new();
-    let pres = presenter::Presenter::new(model, view, status_tracker);
+    let pres = presenter::Presenter::new(view, status_tracker);
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,

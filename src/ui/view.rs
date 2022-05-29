@@ -68,7 +68,8 @@ impl View {
         });
     }
 
-    pub fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
+                          pct_complete: f32) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("Running!");
         });
