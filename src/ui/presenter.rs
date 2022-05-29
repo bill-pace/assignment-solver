@@ -3,7 +3,7 @@ use eframe::egui;
 use eframe::egui::panel::TopBottomSide;
 use crate::io::FileType;
 use crate::ui::{CurrentStatus, Status};
-use crate::ui::model::Model;
+use crate::ui::model::Solver;
 
 pub struct Presenter {
     infile: Option<String>,
@@ -20,7 +20,7 @@ impl Presenter {
         }
     }
 
-    fn update_input_output(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update_not_started(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
             .show(ctx, |ui| {
                 ui.label("Select an input file:");
@@ -57,10 +57,17 @@ impl Presenter {
         });
     }
 
-    fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
+    fn update_in_progress(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
                           pct_complete: f32) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Running!");
+            ui.label("Running! Please be patient while the solver looks for optimal assignments.");
+            ui.add(egui::ProgressBar::new(pct_complete)
+                .show_percentage()
+                .animate(true));
+            ui.label(format!("Input file: {}",
+                             self.infile.as_ref().unwrap_or(&"".to_string())));
+            ui.label(format!("Output file: {}",
+                             self.outfile.as_ref().unwrap_or(&"".to_string())));
         });
     }
 
@@ -82,8 +89,8 @@ impl Presenter {
 
         let status_tracker = self.cur_status.clone();
         std::thread::spawn(move || {
-            let model = Model::new(FileType::CSV, FileType::CSV);
-            model.assign_workers(infile, outfile, status_tracker);
+            let solver = Solver::new(FileType::CSV, FileType::CSV);
+            solver.assign_workers(infile, outfile, status_tracker);
         });
     }
 }
@@ -92,16 +99,16 @@ impl eframe::App for Presenter {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         match self.cur_status.get_status() {
             Status::Success => {
-                self.update_input_output(ctx, _frame)
+                self.update_not_started(ctx, _frame)
             },
             Status::InProgress(pct) => {
-                self.update_running(ctx, _frame, pct)
+                self.update_in_progress(ctx, _frame, pct)
             },
             Status::Failure(msg) => {
-                self.update_input_output(ctx, _frame)
+                self.update_not_started(ctx, _frame)
             },
             Status::NotStarted => {
-                self.update_input_output(ctx, _frame)
+                self.update_not_started(ctx, _frame)
             }
         }
     }

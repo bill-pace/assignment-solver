@@ -4,15 +4,15 @@ use crate::io::{FileType, Reader, reader_factory, Writer, writer_factory};
 use crate::network::Network;
 use crate::ui::{CurrentStatus, Status};
 
-pub struct Model {
+pub struct Solver {
     reader: RefCell<Box<dyn Reader>>,
     writer: RefCell<Box<dyn Writer>>,
     network: Network
 }
 
-impl Model {
+impl Solver {
     pub fn new(in_file_type: FileType, out_file_type: FileType) -> Self {
-        Model {
+        Solver {
             reader: RefCell::new(Box::new(reader_factory(in_file_type))),
             writer: RefCell::new(Box::new(writer_factory(out_file_type))),
             network: Network::new()
