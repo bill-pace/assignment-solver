@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use eframe::egui;
 use crate::io::FileType;
-use crate::ui::CurrentStatus;
+use crate::ui::{CurrentStatus, Status};
 use crate::ui::model::Model;
 use crate::ui::view::View;
 
@@ -23,6 +23,22 @@ impl Presenter {
 
 impl eframe::App for Presenter {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
+        match self.cur_status.get_status() {
+            Status::Success => {
+                self.view.update_input_output(ctx, _frame)
+            },
+            Status::InProgress(pct) => {
+                self.view.update_running(ctx, _frame)
+            },
+            Status::Failure(msg) => {
+                self.view.update_input_output(ctx, _frame)
+            },
+            Status::NotStarted => {
+                self.view.update_input_output(ctx, _frame)
+            },
+            Status::RequestStart => {
+                self.view.update_input_output(ctx, _frame)
+            }
+        }
     }
 }
