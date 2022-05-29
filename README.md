@@ -2,7 +2,7 @@
 A min cost/max flow network solver for the assignment problem.
 
 ## Overview
-This Rust application takes as input a set of workers and a set of tasks, then finds an optimal way to assign those workers to tasks. To run the application, call it from a terminal or command prompt with two arguments: the input filename and the desired output filename (or do `cargo run --release -- <inputFile> <outputFile>` from a clone of this repo).
+This Rust application takes as input a set of workers and a set of tasks, then finds an optimal way to assign those workers to tasks. To run the application, launch the executable then select your input and output files with the dialogs, then click the run button. A progress bar will appear, and when finished the UI will report success or an error message in the bottom panel while allowing you to select another pair of input/output files.
 
 For each task, the required inputs are the minimum number of workers needed to complete the task and the maximum number of workers that could be assigned to the task. For example, if you are operating a warehouse that needs at least two forklift operators to move enough inventory around for the day, and have a total of five forklifts available, then your lower and upper bounds for the "Operate Forklift" task are 2 and 5, respectively.
 

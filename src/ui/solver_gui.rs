@@ -3,17 +3,17 @@ use eframe::egui;
 use eframe::egui::panel::TopBottomSide;
 use crate::io::FileType;
 use crate::ui::{CurrentStatus, Status};
-use crate::ui::model::Solver;
+use crate::ui::solver::Solver;
 
-pub struct Presenter {
+pub struct SolverGui {
     infile: Option<String>,
     outfile: Option<String>,
     cur_status: Arc<CurrentStatus>
 }
 
-impl Presenter {
+impl SolverGui {
     pub fn new(status_tracker: Arc<CurrentStatus>) -> Self {
-        Presenter {
+        SolverGui {
             infile: None,
             outfile: None,
             cur_status: status_tracker
@@ -112,7 +112,7 @@ impl Presenter {
     }
 }
 
-impl eframe::App for Presenter {
+impl eframe::App for SolverGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         match self.cur_status.get_status() {
             Status::Success => {

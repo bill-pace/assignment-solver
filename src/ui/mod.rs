@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
-mod model;
-mod presenter;
+mod solver;
+mod solver_gui;
 
 #[derive(Clone)]
 pub enum Status {
@@ -31,7 +31,7 @@ impl CurrentStatus {
 }
 
 pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
-    let pres = presenter::Presenter::new(status_tracker);
+    let sg = solver_gui::SolverGui::new(status_tracker);
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
@@ -41,6 +41,6 @@ pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
     eframe::run_native(
         "Assignment Solver",
         options,
-        Box::new(|_cc| Box::new(pres)),
+        Box::new(|_cc| Box::new(sg)),
     );
 }
