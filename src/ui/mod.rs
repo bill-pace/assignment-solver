@@ -7,8 +7,7 @@ pub enum Status {
     Success,
     Failure(String), // error message
     InProgress(f32), // fraction complete
-    NotStarted,
-    RequestStart
+    NotStarted
 }
 
 pub struct CurrentStatus {

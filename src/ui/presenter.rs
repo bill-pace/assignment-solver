@@ -20,7 +20,7 @@ impl Presenter {
         }
     }
 
-    pub fn update_input_output(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update_input_output(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
             .show(ctx, |ui| {
                 ui.label("Select an input file:");
@@ -52,12 +52,12 @@ impl Presenter {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if ui.button("Click here to solve").clicked() {
-                self.cur_status.set_status(Status::RequestStart);
+                self.start_solver_thread();
             }
         });
     }
 
-    pub fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
+    fn update_running(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
                           pct_complete: f32) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("Running!");
@@ -102,10 +102,6 @@ impl eframe::App for Presenter {
             },
             Status::NotStarted => {
                 self.update_input_output(ctx, _frame)
-            },
-            Status::RequestStart => {
-                self.start_solver_thread();
-                self.update_running(ctx, _frame, 0.0)
             }
         }
     }
