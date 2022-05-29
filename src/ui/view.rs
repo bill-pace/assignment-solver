@@ -4,18 +4,14 @@ use eframe::egui::panel::TopBottomSide;
 
 pub struct View {
     infile: Option<String>,
-    outfile: Option<String>,
-    status: Cell<Option<String>>,
-    pub(crate) begin_solving: bool
+    outfile: Option<String>
 }
 
 impl View {
     pub fn new() -> Self {
         View {
             infile: None,
-            outfile: None,
-            status: Cell::new(None),
-            begin_solving: false
+            outfile: None
         }
     }
 
@@ -33,14 +29,6 @@ impl View {
             None => Err(std::io::Error::new(std::io::ErrorKind::NotFound,
                                             "You must select an output file!"))
         }
-    }
-
-    pub fn report_error(&self, err: String) {
-        self.status.set(Some(err));
-    }
-
-    pub fn report_success(&self) {
-        self.status.set(Some("Success! Results have been saved.".to_string()));
     }
 
     pub fn update_input_output(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -75,7 +63,7 @@ impl View {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if ui.button("Click here to solve").clicked() {
-                self.begin_solving = true;
+
             }
         });
     }

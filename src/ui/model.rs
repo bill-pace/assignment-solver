@@ -1,13 +1,14 @@
 use std::cell::{Cell, RefCell};
+use std::sync::Arc;
 use crate::io::{FileType, Reader, reader_factory, Writer, writer_factory};
 use crate::network::Network;
+use crate::ui::{CurrentStatus, Status};
 use crate::ui::presenter::Presenter;
 
 pub struct Model {
     reader: RefCell<Option<Box<dyn Reader>>>,
     writer: RefCell<Option<Box<dyn Writer>>>,
-    network: Network,
-    solving: Cell<bool>
+    network: Network
 }
 
 impl Model {
@@ -15,8 +16,7 @@ impl Model {
         Model {
             reader: RefCell::new(None),
             writer: RefCell::new(None),
-            network: Network::new(),
-            solving: Cell::new(false)
+            network: Network::new()
         }
     }
 
@@ -25,37 +25,27 @@ impl Model {
         self.writer.replace(Some(Box::new(writer_factory(out_file_type))));
     }
 
-    pub fn is_solving(&self) -> bool {
-        self.solving.get()
-    }
-
-    pub fn assign_workers(&self, infile: String, outfile: String, pres: &Presenter) {
-        self.solving.set(true);
+    pub fn assign_workers(&self, infile: String, outfile: String, status: Arc<CurrentStatus>) {
         let read_result = self.reader.borrow_mut().as_mut().unwrap()
             .read_file(infile, &self.network);
         if read_result.is_err() {
-            pres.report_error(read_result.err().unwrap().to_string());
-            self.solving.set(false);
+            status.set_status(Status::Failure(read_result.unwrap_err().to_string()));
             return;
         }
 
-        // TODO: pass callback to update progress bar
-        let solve_result = self.network.find_min_cost_max_flow();
+        let solve_result = self.network.find_min_cost_max_flow(status.clone());
         if solve_result.is_err() {
-            pres.report_error(solve_result.err().unwrap().to_string());
-            self.solving.set(false);
+            status.set_status(Status::Failure(solve_result.unwrap_err().message));
             return;
         }
 
         let write_result = self.writer.borrow().as_ref().unwrap()
             .write_file(&self.network, outfile);
         if write_result.is_err() {
-            pres.report_error(write_result.err().unwrap().to_string());
-            self.solving.set(false);
+            status.set_status(Status::Failure(write_result.unwrap_err().to_string()));
             return;
         }
 
-        pres.report_success();
-        self.solving.set(false);
+        status.set_status(Status::Success);
     }
 }
