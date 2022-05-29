@@ -41,9 +41,8 @@ impl CsvReader {
     }
 
     /// Read a provided file line by line to construct a Network from it
-    fn process_file<R>(&mut self, reader: R) -> std::io::Result<Network>
+    fn process_file<R>(&mut self, reader: R, network: &Network) -> std::io::Result<()>
         where R: BufRead {
-        let network = Network::new();
         let mut line_iter = reader.lines();
 
         // initialize tasks
@@ -72,7 +71,7 @@ impl CsvReader {
             }
         }
 
-        Ok(network)
+        Ok(())
     }
 
     /// Construct the tasks from lists of their names and the lower and upper bounds on number of
@@ -152,9 +151,9 @@ impl CsvReader {
 
 impl Reader for CsvReader {
     /// Create file handle and pass it to the process_file method for reading
-    fn read_file(&mut self, filename: String) -> std::io::Result<Network> {
+    fn read_file(&mut self, filename: String, network: &Network) -> std::io::Result<()> {
         let f = File::open(filename)?;
-        self.process_file(BufReader::new(f))
+        self.process_file(BufReader::new(f), network)
     }
 }
 

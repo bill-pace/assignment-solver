@@ -12,7 +12,9 @@ mod feasibility_error;
 mod test;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::sync::Arc;
 use crate::network::feasibility_error::FeasibilityError;
+use crate::ui::{CurrentStatus, Status};
 
 /// A Network is a collection of nodes and the arcs that connect those nodes.
 pub(crate) struct Network {
@@ -86,7 +88,8 @@ impl Network {
 
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
-    pub fn find_min_cost_max_flow(&self) -> Result<(), FeasibilityError> {
+    pub fn find_min_cost_max_flow(&self, status_tracker: Arc<CurrentStatus>)
+        -> Result<(), FeasibilityError> {
         #[cfg(feature = "profiling")] {
             puffin::profile_function!();
         }
@@ -118,6 +121,8 @@ impl Network {
             // path found, push flow and increment the amount of flow
             self.push_flow_down_path(&path);
             current_flow += 1;
+            status_tracker.set_status(Status::InProgress((current_flow as f32) / (num_workers as f32)));
+
             if current_flow == self.min_flow_amount.get() {
                 // minimum requirement achieved: invert arcs that touch the sink
                 self.reset_arcs_for_second_phase();
