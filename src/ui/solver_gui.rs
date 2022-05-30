@@ -30,7 +30,9 @@ impl SolverGui {
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Select an input file:"));
                 ui.horizontal(|ui| {
-                    if ui.button("Select input file…").clicked() {
+                    let btn = egui::Button::new("Select input file:")
+                        .fill(if self.infile.is_none() {Color32::GOLD} else {Color32::GREEN});
+                    if ui.add(btn).clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
                             self.infile = Some(path.display().to_string());
                         }
@@ -45,7 +47,9 @@ impl SolverGui {
 
                 ui.vertical_centered(|ui| ui.heading("Select an output file:"));
                 ui.horizontal(|ui| {
-                    if ui.button("Select output file…").clicked() {
+                    let btn = egui::Button::new("Select output file:")
+                        .fill(if self.outfile.is_none() {Color32::GOLD} else {Color32::GREEN});
+                    if ui.add(btn).clicked() {
                         if let Some(path) = rfd::FileDialog::new().save_file() {
                             self.outfile = Some(path.display().to_string());
                         }
@@ -61,7 +65,10 @@ impl SolverGui {
 
         egui::CentralPanel::default().frame(launch_frame).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                if ui.button("Click here to solve").clicked() {
+                let btn = egui::Button::new("Click here to solve")
+                    .fill(if self.infile.is_none() || self.outfile.is_none() {Color32::RED}
+                          else {Color32::GREEN});
+                if ui.add(btn).clicked() {
                     self.start_solver_thread();
                 }
             })
