@@ -66,7 +66,9 @@ impl SolverGui {
 
     fn update_in_progress(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
                           pct_complete: f32) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+        let mut progress_frame = egui::containers::Frame::default();
+        progress_frame.fill = Color32::LIGHT_YELLOW;
+        egui::CentralPanel::default().frame(progress_frame).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("Running! Please be patient while the solver looks for optimal assignments.")
             });
