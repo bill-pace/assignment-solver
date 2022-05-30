@@ -23,44 +23,52 @@ impl SolverGui {
     fn update_not_started(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
             .show(ctx, |ui| {
-                ui.heading("Select an input file:");
-                if ui.button("Select input file…").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_file() {
-                        self.infile = Some(path.display().to_string());
+                ui.vertical_centered(|ui| ui.heading("Select an input file:"));
+                ui.horizontal(|ui| {
+                    if ui.button("Select input file…").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_file() {
+                            self.infile = Some(path.display().to_string());
+                        }
                     }
-                }
-                if let Some(picked_path) = &self.infile {
-                    ui.horizontal(|ui| {
-                        ui.label("Picked file:");
-                        ui.monospace(picked_path);
-                    });
-                }
+                    if let Some(picked_path) = &self.infile {
+                        ui.horizontal(|ui| {
+                            ui.label("Picked file:");
+                            ui.monospace(picked_path);
+                        });
+                    }
+                });
 
-                ui.heading("Select an output file:");
-                if ui.button("Select output file…").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().save_file() {
-                        self.outfile = Some(path.display().to_string());
+                ui.vertical_centered(|ui| ui.heading("Select an output file:"));
+                ui.horizontal(|ui| {
+                    if ui.button("Select output file…").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().save_file() {
+                            self.outfile = Some(path.display().to_string());
+                        }
                     }
-                }
-                if let Some(picked_path) = &self.outfile {
-                    ui.horizontal(|ui| {
-                        ui.label("Picked file:");
-                        ui.monospace(picked_path);
-                    });
-                }
+                    if let Some(picked_path) = &self.outfile {
+                        ui.horizontal(|ui| {
+                            ui.label("Picked file:");
+                            ui.monospace(picked_path);
+                        });
+                    }
+                });
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if ui.button("Click here to solve").clicked() {
-                self.start_solver_thread();
-            }
+            ui.vertical_centered(|ui| {
+                if ui.button("Click here to solve").clicked() {
+                    self.start_solver_thread();
+                }
+            })
         });
     }
 
     fn update_in_progress(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
                           pct_complete: f32) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Running! Please be patient while the solver looks for optimal assignments.");
+            ui.vertical_centered(|ui| {
+                ui.heading("Running! Please be patient while the solver looks for optimal assignments.")
+            });
             ui.add(egui::ProgressBar::new(pct_complete)
                 .show_percentage()
                 .animate(true));
@@ -74,7 +82,7 @@ impl SolverGui {
     fn update_success(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
             .show(ctx, |ui| {
-                ui.heading("Success! Output has been saved to disk.")
+                ui.vertical_centered(|ui| ui.heading("Success! Output has been saved to disk."));
             });
         self.update_not_started(ctx, _frame);
     }
@@ -82,7 +90,7 @@ impl SolverGui {
     fn update_failure(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, msg: String) {
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
             .show(ctx, |ui| {
-                ui.heading("Failure! The solver encountered a problem:");
+                ui.vertical_centered(|ui| ui.heading("Failure! The solver encountered a problem:"));
                 ui.label(msg);
             });
         self.update_not_started(ctx, _frame);
