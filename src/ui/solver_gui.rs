@@ -22,7 +22,11 @@ impl SolverGui {
     }
 
     fn update_not_started(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut launch_frame = egui::containers::Frame::default();
+        launch_frame.fill = Color32::LIGHT_GRAY;
+
         egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
+            .frame(launch_frame.clone())
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Select an input file:"));
                 ui.horizontal(|ui| {
@@ -55,7 +59,7 @@ impl SolverGui {
                 });
             });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().frame(launch_frame).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("Click here to solve").clicked() {
                     self.start_solver_thread();
