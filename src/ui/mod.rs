@@ -37,7 +37,7 @@ pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
 
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
-        initial_window_size: Some(Vec2 { x: 600.0, y: 400.0 }),
+        initial_window_size: Some(Vec2 { x: 600.0, y: 300.0 }),
         ..Default::default()
     };
 
