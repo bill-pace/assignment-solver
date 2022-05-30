@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use eframe::egui;
+use eframe::egui::Color32;
 use eframe::egui::panel::TopBottomSide;
 use crate::io::FileType;
 use crate::ui::{CurrentStatus, Status};
@@ -80,7 +81,10 @@ impl SolverGui {
     }
 
     fn update_success(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut success_frame = egui::containers::Frame::default();
+        success_frame.fill = Color32::GREEN;
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
+            .frame(success_frame)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Success! Output has been saved to disk."));
             });
@@ -88,7 +92,10 @@ impl SolverGui {
     }
 
     fn update_failure(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, msg: String) {
+        let mut failure_frame = egui::containers::Frame::default();
+        failure_frame.fill = Color32::RED;
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
+            .frame(failure_frame)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Failure! The solver encountered a problem:"));
                 ui.label(msg);
