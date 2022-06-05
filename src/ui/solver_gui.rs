@@ -3,7 +3,7 @@ use eframe::egui;
 use eframe::egui::{Color32, FontId};
 use eframe::egui::FontFamily::Proportional;
 use eframe::egui::panel::TopBottomSide;
-use eframe::egui::TextStyle::{Body, Monospace, Heading, Name, Button, Small};
+use eframe::egui::TextStyle;
 use crate::io::FileType;
 use crate::ui::{CurrentStatus, Status};
 use crate::ui::solver::Solver;
@@ -20,13 +20,13 @@ impl SolverGui {
         style.spacing.item_spacing = egui::vec2(10.0, 10.0);
         style.spacing.button_padding = egui::vec2(5.0, 5.0);
         style.text_styles = [
-            (Heading, FontId::new(30.0, Proportional)),
-            (Name("Heading2".into()), FontId::new(28.0, Proportional)),
-            (Name("Context".into()), FontId::new(23.0, Proportional)),
-            (Body, FontId::new(24.0, Proportional)),
-            (Monospace, FontId::new(18.0, Proportional)),
-            (Button, FontId::new(20.0, Proportional)),
-            (Small, FontId::new(18.0, Proportional)),
+            (TextStyle::Heading, FontId::new(30.0, Proportional)),
+            (TextStyle::Name("Heading2".into()), FontId::new(28.0, Proportional)),
+            (TextStyle::Name("Context".into()), FontId::new(23.0, Proportional)),
+            (TextStyle::Body, FontId::new(24.0, Proportional)),
+            (TextStyle::Monospace, FontId::new(18.0, Proportional)),
+            (TextStyle::Button, FontId::new(20.0, Proportional)),
+            (TextStyle::Small, FontId::new(18.0, Proportional)),
         ].into();
         style.visuals.override_text_color = Some(Color32::BLACK);
         cc.egui_ctx.set_style(style);
