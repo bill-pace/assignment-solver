@@ -33,17 +33,17 @@ impl CurrentStatus {
 }
 
 pub fn launch_ui(status_tracker: Arc<CurrentStatus>) {
-    let sg = solver_gui::SolverGui::new(status_tracker);
-
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
-        initial_window_size: Some(Vec2 { x: 600.0, y: 300.0 }),
+        initial_window_size: Some(Vec2 { x: 1024.0, y: 384.0 }),
         ..Default::default()
     };
 
     eframe::run_native(
         "Assignment Solver",
         options,
-        Box::new(|_cc| Box::new(sg)),
+        Box::new(|cc| {
+            Box::new(solver_gui::SolverGui::new(status_tracker, cc))
+        })
     );
 }
