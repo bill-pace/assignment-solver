@@ -28,6 +28,7 @@ impl SolverGui {
             (Button, FontId::new(20.0, Proportional)),
             (Small, FontId::new(18.0, Proportional)),
         ].into();
+        style.visuals.override_text_color = Some(Color32::BLACK);
         cc.egui_ctx.set_style(style);
 
         SolverGui {
