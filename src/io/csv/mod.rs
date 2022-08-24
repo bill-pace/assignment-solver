@@ -35,7 +35,7 @@ pub struct CsvReader {
 }
 
 impl CsvReader {
-    /// Create a new CsvReader struct
+    /// Create a new `CsvReader` struct
     pub fn new() -> CsvReader {
         CsvReader { tasks: RefCell::new(Vec::new()) }
     }
@@ -61,12 +61,12 @@ impl CsvReader {
             None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
                                                    "No maximum capacities for tasks!"))
         };
-        self.process_tasks(&network, task_names, task_minima, task_maxima)?;
+        self.process_tasks(network, &task_names, &task_minima, &task_maxima)?;
 
         // initialize workers
-        while let Some(line) = line_iter.next() {
+        for line in line_iter {
             match line {
-                Ok(l) => self.process_worker(&network, l)?,
+                Ok(l) => self.process_worker(network, &l)?,
                 Err(err) => return Err(err)
             }
         }
@@ -76,11 +76,11 @@ impl CsvReader {
 
     /// Construct the tasks from lists of their names and the lower and upper bounds on number of
     /// assigned workers
-    fn process_tasks(&mut self, network: &Network, task_names: String, task_minima: String,
-                     task_maxima: String) -> std::io::Result<()> {
-        let names = task_names.split(",").collect::<Vec<&str>>();
-        let minima = task_minima.split(",").collect::<Vec<&str>>();
-        let maxima = task_maxima.split(",").collect::<Vec<&str>>();
+    fn process_tasks(&mut self, network: &Network, task_names: &str, task_minima: &str,
+                     task_maxima: &str) -> std::io::Result<()> {
+        let names = task_names.split(',').collect::<Vec<&str>>();
+        let minima = task_minima.split(',').collect::<Vec<&str>>();
+        let maxima = task_maxima.split(',').collect::<Vec<&str>>();
         if names.len() != minima.len() || names.len() != maxima.len() {
             // mismatched input sizes imply either missing or extra data and thus bad input format
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
@@ -105,7 +105,7 @@ impl CsvReader {
             };
             if upper < lower {
                 return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
-                                               format!("Maximum cannot be less than minimum!")));
+                                               "Maximum cannot be less than minimum!".to_string()));
             }
 
             let task_name = name.trim().to_string();
@@ -116,9 +116,9 @@ impl CsvReader {
     }
 
     /// Add a new worker to the network under construction
-    fn process_worker(&mut self, network: &Network, worker_info: String) -> std::io::Result<()> {
+    fn process_worker(&mut self, network: &Network, worker_info: &str) -> std::io::Result<()> {
         let mut affinities = Vec::new();
-        let mut info = worker_info.split(",");
+        let mut info = worker_info.split(',');
         let worker_name = info.next()
             .expect("Problem reading worker's name!")
             .trim().to_string();
@@ -131,7 +131,7 @@ impl CsvReader {
                                                                worker_name)))
             };
 
-            if val != "" {
+            if !val.is_empty() {
                 let aff = match f32::from_str(val) {
                     Ok(v) => v,
                     Err(err) =>
@@ -150,7 +150,7 @@ impl CsvReader {
 }
 
 impl Reader for CsvReader {
-    /// Create file handle and pass it to the process_file method for reading
+    /// Create file handle and pass it to the `process_file` method for reading
     fn read_file(&mut self, filename: String, network: &Network) -> std::io::Result<()> {
         let f = File::open(filename)?;
         self.process_file(BufReader::new(f), network)
@@ -174,7 +174,7 @@ pub struct CsvWriter {
 }
 
 impl CsvWriter {
-    /// Create a new CsvWriter
+    /// Create a new `CsvWriter`
     pub fn new() -> CsvWriter {
         CsvWriter { }
     }
@@ -194,7 +194,7 @@ impl CsvWriter {
         writeln!(file, "{}", task_names.join(","))?;
 
         // create vector of strings that shows worker assignments for each task
-        let assignments = self.get_assignments(&task_ids, &outputs);
+        let assignments = self.get_assignments(&task_ids, outputs);
 
         // write each line of workers assigned
         for assignment in assignments {
@@ -208,16 +208,16 @@ impl CsvWriter {
     fn get_assignments(&self, task_order: &Vec<usize>, outputs: &Network) -> Vec<String> {
         let worker_assignments = outputs.get_worker_assignments();
         let max_size = worker_assignments.values()
-            .map(|v| v.len())
+            .map(Vec::len)
             .max().unwrap();
         let mut assignments: Vec<Vec<String>> = vec![vec![]; max_size];
         for task in task_order {
             for (row, worker) in worker_assignments.get(task).unwrap().iter().enumerate() {
-                assignments[row].push(outputs.get_worker_name_from_id(*worker))
+                assignments[row].push(outputs.get_worker_name_from_id(*worker));
             }
             if worker_assignments.get(task).unwrap().len() < max_size {
-                for row in worker_assignments.get(task).unwrap().len()..max_size {
-                    assignments[row].push("".to_string());
+                for empty_assignment in assignments.iter_mut().take(max_size).skip(worker_assignments.get(task).unwrap().len()) {
+                    empty_assignment.push("".to_string());
                 }
             }
         }

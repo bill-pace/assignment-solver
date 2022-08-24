@@ -19,24 +19,24 @@ impl Solver {
         }
     }
 
-    pub fn assign_workers(&self, infile: String, outfile: String, status: Arc<CurrentStatus>) {
+    pub fn assign_workers(&self, infile: String, outfile: String, status: &Arc<CurrentStatus>) {
         let read_result = self.reader.borrow_mut()
             .read_file(infile, &self.network);
-        if read_result.is_err() {
-            status.set_status(Status::Failure(read_result.unwrap_err().to_string()));
+        if let Err(e) = read_result {
+            status.set_status(Status::Failure(e.to_string()));
             return;
         }
 
-        let solve_result = self.network.find_min_cost_max_flow(status.clone());
-        if solve_result.is_err() {
-            status.set_status(Status::Failure(solve_result.unwrap_err().message));
+        let solve_result = self.network.find_min_cost_max_flow(status);
+        if let Err(e) = solve_result {
+            status.set_status(Status::Failure(e.message));
             return;
         }
 
         let write_result = self.writer.borrow()
             .write_file(&self.network, outfile);
-        if write_result.is_err() {
-            status.set_status(Status::Failure(write_result.unwrap_err().to_string()));
+        if let Err(e) = write_result {
+            status.set_status(Status::Failure(e.to_string()));
             return;
         }
 

@@ -43,11 +43,9 @@ impl Arc {
                 self.invert();
                 inverted = true;
             }
-        } else {
-            if self.current_flow.get() == self.min_flow {
-                self.invert();
-                inverted = true;
-            }
+        } else if self.current_flow.get() == self.min_flow {
+            self.invert();
+            inverted = true;
         }
         inverted
     }

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::default::Default;
 use eframe::egui;
 use eframe::egui::{Color32, FontId};
 use eframe::egui::FontFamily::Proportional;
@@ -39,11 +40,13 @@ impl SolverGui {
     }
 
     fn update_not_started(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut launch_frame = egui::containers::Frame::default();
-        launch_frame.fill = Color32::LIGHT_GRAY;
+        let launch_frame = egui::Frame {
+            fill: Color32::LIGHT_GRAY,
+            ..Default::default()
+        };
 
         egui::TopBottomPanel::new(TopBottomSide::Top, "Select input and output files:")
-            .frame(launch_frame.clone())
+            .frame(launch_frame)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Select an input file:"));
                 ui.horizontal(|ui| {
@@ -94,8 +97,11 @@ impl SolverGui {
 
     fn update_in_progress(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame,
                           pct_complete: f32) {
-        let mut progress_frame = egui::containers::Frame::default();
-        progress_frame.fill = Color32::LIGHT_YELLOW;
+        let progress_frame = egui::Frame {
+            fill: Color32::LIGHT_YELLOW,
+            ..Default::default()
+        };
+
         egui::CentralPanel::default().frame(progress_frame).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.heading("Running! Please be patient while the solver looks for optimal assignments.")
@@ -110,27 +116,33 @@ impl SolverGui {
         });
     }
 
-    fn update_success(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut success_frame = egui::containers::Frame::default();
-        success_frame.fill = Color32::GREEN;
+    fn update_success(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let success_frame = egui::Frame {
+            fill: Color32::GREEN,
+            ..Default::default()
+        };
+
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
             .frame(success_frame)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Success! Output has been saved to disk."));
             });
-        self.update_not_started(ctx, _frame);
+        self.update_not_started(ctx, frame);
     }
 
-    fn update_failure(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame, msg: String) {
-        let mut failure_frame = egui::containers::Frame::default();
-        failure_frame.fill = Color32::RED;
+    fn update_failure(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame, msg: String) {
+        let failure_frame = egui::Frame {
+            fill: Color32::RED,
+            ..Default::default()
+        };
+
         egui::TopBottomPanel::new(TopBottomSide::Bottom, "Success")
             .frame(failure_frame)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| ui.heading("Failure! The solver encountered a problem:"));
                 ui.label(msg);
             });
-        self.update_not_started(ctx, _frame);
+        self.update_not_started(ctx, frame);
     }
 
     fn start_solver_thread(&self) {
@@ -151,26 +163,26 @@ impl SolverGui {
 
         let status_tracker = self.cur_status.clone();
         std::thread::spawn(move || {
-            let solver = Solver::new(FileType::CSV, FileType::CSV);
-            solver.assign_workers(infile, outfile, status_tracker);
+            let solver = Solver::new(FileType::Csv, FileType::Csv);
+            solver.assign_workers(infile, outfile, &status_tracker);
         });
     }
 }
 
 impl eframe::App for SolverGui {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         match self.cur_status.get_status() {
             Status::Success => {
-                self.update_success(ctx, _frame);
+                self.update_success(ctx, frame);
             },
             Status::InProgress(pct) => {
-                self.update_in_progress(ctx, _frame, pct);
+                self.update_in_progress(ctx, frame, pct);
             },
             Status::Failure(msg) => {
-                self.update_failure(ctx, _frame, msg);
+                self.update_failure(ctx, frame, msg);
             },
             Status::NotStarted => {
-                self.update_not_started(ctx, _frame);
+                self.update_not_started(ctx, frame);
             }
         }
     }

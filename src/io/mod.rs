@@ -2,10 +2,10 @@
 //!
 //! This module defines Reader and Writer traits that work directly with Network structs, for
 //! simplified use in a user interface module. New Readers and Writers should be submodules to the
-//! io module (eg io::csv) and can implement both Reader and Writer on appropriate structs there. A
-//! factory can then produce an appropriate Reader and Writer for the chosen file type(s), based on
-//! a chosen item in the FileType enum. The enum should have one entry for every filetype supported
-//! by implementations of the Reader and Writer traits.
+//! io module (eg `io::csv`) and can implement both Reader and Writer on appropriate structs there.
+//! A factory can then produce an appropriate Reader and Writer for the chosen file type(s), based
+//! on a chosen item in the `FileType` enum. The enum should have one entry for every filetype
+//! supported by implementations of the Reader and Writer traits.
 
 use crate::io::csv::{CsvReader, CsvWriter};
 use crate::network::Network;
@@ -13,8 +13,9 @@ use crate::network::Network;
 mod csv;
 
 /// Supported file types
+#[derive(Copy, Clone)]
 pub enum FileType {
-    CSV
+    Csv
 }
 
 /// A Reader will attempt to construct a Network from an input file, returning a Result that
@@ -30,17 +31,17 @@ pub(crate) trait Writer {
 }
 
 /// Create a struct that implements the Reader trait based on the selected file type from the
-/// FileType enum
+/// `FileType` enum
 pub(crate) fn reader_factory(file_type: FileType) -> impl Reader {
     match file_type {
-        FileType::CSV => CsvReader::new()
+        FileType::Csv => CsvReader::new()
     }
 }
 
 /// Create a struct that implements the Writer trait based on the selected file type from the
-/// FileType enum
+/// `FileType` enum
 pub(crate) fn writer_factory(file_type: FileType) -> impl Writer {
     match file_type {
-        FileType::CSV => CsvWriter::new()
+        FileType::Csv => CsvWriter::new()
     }
 }

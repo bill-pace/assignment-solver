@@ -7,7 +7,7 @@ fn test_read() {
     let network = Network::new();
     file_reader.read_file("src/io/csv/test-data/testInput.csv".to_string(),
                           &network).unwrap();
-    network.find_min_cost_max_flow(std::sync::Arc::new(CurrentStatus::new())).unwrap();
+    network.find_min_cost_max_flow(&std::sync::Arc::new(CurrentStatus::new())).unwrap();
     let total_cost = -network.get_cost_of_arcs_from_nodes(&file_reader.tasks.borrow());
     assert!((total_cost - 12.5_f32).abs() / 12.5_f32 < 5e-10_f32);
 }
@@ -97,7 +97,7 @@ fn test_write() {
     let network = Network::new();
     file_reader.read_file("src/io/csv/test-data/testInput.csv".to_string(),
                           &network).unwrap();
-    network.find_min_cost_max_flow(std::sync::Arc::new(CurrentStatus::new())).unwrap();
+    network.find_min_cost_max_flow(&std::sync::Arc::new(CurrentStatus::new())).unwrap();
     let file_writer = CsvWriter::new();
     file_writer.write_file(&network, "src/io/csv/test-output/testOutput.csv".to_string()).unwrap();
 }

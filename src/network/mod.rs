@@ -70,7 +70,7 @@ impl Network {
     }
 
     /// Add a new node to the network representing a worker, connect the source to the new node, and
-    /// connect the new node to all tasks the worker can perform. As with add_task, return the
+    /// connect the new node to all tasks the worker can perform. As with `add_task`, return the
     /// worker node's ID.
     pub fn add_worker(&self, name: String, task_affinity: &Vec<(usize, f32)>) {
         let worker_id = self.add_node();
@@ -88,7 +88,7 @@ impl Network {
 
     /// Perform minimum cost augmentation to build a min cost max flow by assigning one worker at a
     /// time.
-    pub fn find_min_cost_max_flow(&self, status_tracker: Arc<CurrentStatus>)
+    pub fn find_min_cost_max_flow(&self, status_tracker: &Arc<CurrentStatus>)
         -> Result<(), FeasibilityError> {
         #[cfg(feature = "profiling")] {
             puffin::profile_function!();
@@ -139,13 +139,12 @@ impl Network {
         Ok(())
     }
 
-    /// Get the keys to the task_names HashMap
+    /// Get the keys to the `task_names` `HashMap`
     pub fn get_task_ids(&self) -> Vec<usize> {
         self.task_names.borrow()
             .keys()
-            .map(|k| *k)
+            .copied()
             .collect::<Vec<usize>>()
-            .clone()
     }
 
     /// Get names of tasks in order of requested IDs
@@ -160,7 +159,7 @@ impl Network {
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
     /// task node IDs, this method will return -1 times the total cost of worker assignments, since
     /// assigning a worker to a task involves negating the corresponding arc's cost.
-    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &Vec<usize>) -> f32 {
+    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &[usize]) -> f32 {
         nodes.iter()
             .flat_map(|node|
                 self.nodes.borrow()[*node]
@@ -177,7 +176,7 @@ impl Network {
         self.worker_names.borrow().get(&id).unwrap().to_string()
     }
 
-    /// Create and return a HashMap of which workers are assigned to which tasks
+    /// Create and return a `HashMap` of which workers are assigned to which tasks
     pub fn get_worker_assignments(&self) -> HashMap<usize, Vec<usize>> {
         let mut assignments = HashMap::new();
         let task_ids = self.get_task_ids();
@@ -234,7 +233,7 @@ impl Network {
         // Search for shortest path, starting from the source.
         let mut nodes_updated = vec![0]; // stores ID numbers
         let mut num_iterations = 0_usize;
-        while nodes_updated.len() > 0 && num_iterations < num_nodes {
+        while !nodes_updated.is_empty() && num_iterations < num_nodes {
             let nodes_to_search_from = nodes_updated.clone();
             nodes_updated.clear();
 
@@ -267,15 +266,13 @@ impl Network {
 
             num_iterations += 1;
             // eliminate duplicated entries to make sure we only search once before an update
-            nodes_updated.sort();
+            nodes_updated.sort_unstable();
             nodes_updated.dedup();
         }
 
-        // if number of iterations exceeds number of nodes, there's a bug
-        if num_iterations >= num_nodes {
-            panic!("Negative cycle detected - this can't happen in the algorithm this code \
-                   attempts to implement, so there must be a bug.");
-        }
+        assert!(num_iterations < num_nodes, "Negative cycle detected - this can't happen in the \
+                                             algorithm this code attempts to implement, so there \
+                                             must be a bug.");
         if predecessors[1].is_none() {
             return Err(FeasibilityError { message: "Unable to assign all workers!".to_string() });
         }
@@ -287,16 +284,14 @@ impl Network {
         }
 
         // confirm the last node found was the source - if not, there's a bug
-        if !(*path.last().unwrap() == 0) {
-            panic!("Path does not start at source!")
-        }
+        assert_eq!(*path.last().unwrap(), 0, "Path does not start at source!");
 
         path.reverse();
         Ok(path)
     }
 
     /// Push flow down each arc in a path.
-    fn push_flow_down_path(&self, path: &Vec<usize>) {
+    fn push_flow_down_path(&self, path: &[usize]) {
         #[cfg(feature = "profiling")]
         {
             puffin::profile_function!();
@@ -344,8 +339,7 @@ impl Network {
             puffin::profile_function!();
         }
 
-        self.nodes.borrow()[start_node_id].get_connections().iter()
-            .map(|c| *c)
+        self.nodes.borrow()[start_node_id].get_connections().iter().copied()
             .find(|c| self.arcs.borrow()[*c].get_end_node_id() == end_node_id)
     }
 }
