@@ -6,15 +6,15 @@ use crate::ui::{CurrentStatus, Status};
 
 pub(super) struct Solver {
     reader: RefCell<Box<dyn Reader>>,
-    writer: RefCell<Box<dyn Writer>>,
-    network: Network
+    writer_type: FileType,
+    network: Network,
 }
 
 impl Solver {
     pub fn new(in_file_type: FileType, out_file_type: FileType) -> Self {
         Solver {
             reader: RefCell::new(Box::new(reader_factory(in_file_type))),
-            writer: RefCell::new(Box::new(writer_factory(out_file_type))),
+            writer_type: out_file_type,
             network: Network::new()
         }
     }
@@ -33,7 +33,8 @@ impl Solver {
             return;
         }
 
-        let write_result = self.writer.borrow()
+        let write_result = writer_factory(self.writer_type,
+        self.reader.borrow().clone_task_names())
             .write_file(&self.network, outfile);
         if let Err(e) = write_result {
             status.set_status(Status::Failure(e.to_string()));

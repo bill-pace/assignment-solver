@@ -24,7 +24,7 @@ pub(crate) struct Network {
     num_tasks: Cell<usize>,
     nodes: RefCell<Vec<node::Node>>,
     arcs: RefCell<Vec<arc::Arc>>,
-    task_names: RefCell<HashMap<usize, String>>,
+    task_names: RefCell<HashMap<String, usize>>,
     worker_names: RefCell<HashMap<usize, String>>
 }
 
@@ -32,6 +32,9 @@ impl Network {
     /// Create a new Network and its source and sink nodes, ensuring those two nodes have IDs 0 and
     /// 1.
     pub fn new() -> Network {
+        // DO NOT allow the vectors stored in self.nodes and self.arcs to be reordered and
+        // DO NOT share indices into them outside of this struct. Indices are used in
+        // unchecked slicing and therefore must be correct to avoid out-of-bounds accesses.
         let new_network = Network {
             min_flow_satisfied: Cell::new(false),
             min_flow_amount: Cell::new(0),
@@ -49,7 +52,7 @@ impl Network {
 
     /// Add a new node to the network representing a task, and connect that node to the sink. Return
     /// the task's ID number to look it back up after assignment is complete.
-    pub fn add_task(&self, name: String, min_workers: usize, max_workers: usize) -> usize {
+    pub fn add_task(&self, name: String, min_workers: usize, max_workers: usize) {
         let task_id = self.add_node();
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
@@ -64,23 +67,25 @@ impl Network {
             self.add_arc(1, task_id, 0.0,
                          min_workers, max_workers);
         }
-        self.task_names.borrow_mut().insert(task_id, name);
-
-        task_id
+        self.task_names.borrow_mut().insert(name, task_id);
     }
 
     /// Add a new node to the network representing a worker, connect the source to the new node, and
     /// connect the new node to all tasks the worker can perform. As with `add_task`, return the
     /// worker node's ID.
-    pub fn add_worker(&self, name: String, task_affinity: &Vec<(usize, f32)>) {
+    pub fn add_worker(&self, name: String, task_affinity: &Vec<(&String, f32)>) {
         let worker_id = self.add_node();
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
         // the flow bound is 1 for both phases of the min cost augmentation
         self.add_arc(0, worker_id, 0.0, 1, 1);
+
+        let task_names = self.task_names.borrow();
         // connect the worker to each task they can perform, using their affinity as the cost of the
         // new arc - flow bound stays 1
         for affinity in task_affinity {
-            self.add_arc(worker_id, affinity.0, affinity.1,
+            let task_id = task_names.get(affinity.0)
+                .expect(&*format!("Affinity provided for unknown task {}", affinity.0));
+            self.add_arc(worker_id, *task_id, affinity.1,
                          1, 1);
         }
         self.worker_names.borrow_mut().insert(worker_id, name);
@@ -139,54 +144,33 @@ impl Network {
         Ok(())
     }
 
-    /// Get the keys to the `task_names` `HashMap`
-    pub fn get_task_ids(&self) -> Vec<usize> {
-        self.task_names.borrow()
-            .keys()
-            .copied()
-            .collect::<Vec<usize>>()
-    }
-
-    /// Get names of tasks in order of requested IDs
-    pub fn get_task_names(&self, ids: &Vec<usize>) -> Vec<String> {
-        let mut names: Vec<String> = vec!();
-        for id in ids {
-            names.push(self.task_names.borrow().get(id).unwrap().to_string());
-        }
-        names
-    }
-
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
     /// task node IDs, this method will return -1 times the total cost of worker assignments, since
     /// assigning a worker to a task involves negating the corresponding arc's cost.
-    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &[usize]) -> f32 {
+    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &[String]) -> f32 {
+        let task_names = self.task_names.borrow();
         nodes.iter()
-            .flat_map(|node|
-                self.nodes.borrow()[*node]
-                    .get_connections()
-                    .iter()
-                    .map(|connected_node|
-                        self.arcs.borrow()[*connected_node].get_cost())
-                    .collect::<Vec<f32>>())
+            .flat_map(|node| {
+                let node_id = task_names.get(node)
+                    .expect(&*format!("Cannot find id for task {}", node));
+                self.get_cost_of_flow_from_node(*node_id)
+            })
             .sum()
     }
 
-    /// Get name of worker given an ID number
-    pub fn get_worker_name_from_id(&self, id: usize) -> String {
-        self.worker_names.borrow().get(&id).unwrap().to_string()
-    }
-
     /// Create and return a `HashMap` of which workers are assigned to which tasks
-    pub fn get_worker_assignments(&self) -> HashMap<usize, Vec<usize>> {
+    pub fn get_worker_assignments(&self) -> HashMap<String, Vec<String>> {
         let mut assignments = HashMap::new();
-        let task_ids = self.get_task_ids();
-        for task in task_ids {
-            let workers = self.nodes.borrow()[task].get_connections()
+        let tasks= self.task_names.borrow();
+        for task in tasks.keys() {
+            let task_id = tasks.get(task).unwrap();
+            let workers = self.nodes.borrow()[*task_id].get_connections()
                 .iter()
                 .map(|a| self.arcs.borrow()[*a].get_end_node_id())
                 .filter(|n| *n != 1)
+                .map(|id| self.worker_names.borrow().get(&id).unwrap().clone())
                 .collect();
-            assignments.insert(task, workers);
+            assignments.insert(task.clone(), workers);
         }
 
         assignments
@@ -341,6 +325,16 @@ impl Network {
 
         self.nodes.borrow()[start_node_id].get_connections().iter().copied()
             .find(|c| self.arcs.borrow()[*c].get_end_node_id() == end_node_id)
+    }
+
+    /// Find the total cost of all arcs leaving the node specified by the given ID.
+    fn get_cost_of_flow_from_node(&self, node: usize) -> Vec<f32> {
+        self.nodes.borrow()[node]
+            .get_connections()
+            .iter()
+            .map(|connected_node|
+                self.arcs.borrow()[*connected_node].get_cost())
+            .collect()
     }
 }
 

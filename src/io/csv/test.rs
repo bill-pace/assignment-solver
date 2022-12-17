@@ -98,6 +98,6 @@ fn test_write() {
     file_reader.read_file("src/io/csv/test-data/testInput.csv".to_string(),
                           &network).unwrap();
     network.find_min_cost_max_flow(&std::sync::Arc::new(CurrentStatus::new())).unwrap();
-    let file_writer = CsvWriter::new();
+    let file_writer = CsvWriter::new(file_reader.clone_task_names());
     file_writer.write_file(&network, "src/io/csv/test-output/testOutput.csv".to_string()).unwrap();
 }

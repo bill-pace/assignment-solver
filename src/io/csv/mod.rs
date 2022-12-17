@@ -31,7 +31,7 @@ mod test;
 /// cannot do the corresponding task).
 pub(super) struct CsvReader {
     // keep list of task IDs to pair up with affinities when reading worker data
-    tasks: RefCell<Vec<usize>>
+    tasks: RefCell<Vec<String>>,
 }
 
 impl CsvReader {
@@ -109,8 +109,8 @@ impl CsvReader {
             }
 
             let task_name = name.trim().to_string();
-            let task_id = network.add_task(task_name, lower, upper);
-            self.tasks.borrow_mut().push(task_id);
+            self.tasks.borrow_mut().push(task_name.clone());
+            network.add_task(task_name, lower, upper);
         }
         Ok(())
     }
@@ -123,7 +123,8 @@ impl CsvReader {
             .expect("Problem reading worker's name!")
             .trim().to_string();
 
-        for task_id in self.tasks.borrow().iter() {
+        let tasks = self.tasks.borrow();
+        for task_name in tasks.iter() {
             let val = match info.next() {
                 Some(v) => v,
                 None => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData,
@@ -139,7 +140,7 @@ impl CsvReader {
                                                        format!(r#"Expected numeric value for worker affinity, found "{}"; error: {}"#,
                                                                val, err)))
                 };
-                affinities.push((*task_id, aff)); // task ID stored in self.tasks
+                affinities.push((task_name, aff)); // task ID stored in self.tasks
             }
         }
 
@@ -154,6 +155,10 @@ impl Reader for CsvReader {
     fn read_file(&mut self, filename: String, network: &Network) -> std::io::Result<()> {
         let f = File::open(filename)?;
         self.process_file(BufReader::new(f), network)
+    }
+
+    fn clone_task_names(&self) -> Vec<String> {
+        self.tasks.borrow().clone()
     }
 }
 
@@ -170,31 +175,30 @@ impl Reader for CsvReader {
 ///     ----------------|-----------------|-----------------|-----------------|----
 ///     ...
 pub(super) struct CsvWriter {
-
+    task_names: Vec<String>,
 }
 
 impl CsvWriter {
     /// Create a new `CsvWriter`
-    pub fn new() -> CsvWriter {
-        CsvWriter { }
+    pub fn new(task_names: Vec<String>) -> CsvWriter {
+        CsvWriter {
+            task_names,
+        }
     }
 
     /// Write outputs collected from a Network into a file handle, in CSV format
     fn write(&self, outputs: &Network, mut file: File) -> std::io::Result<()> {
-        // freeze order of tasks for writing lines
-        let task_ids = outputs.get_task_ids();
-
         // record final "score" of solution - sum of affinity scores over assignments that were made
         // note that affinity scores are negated as a result of the assignment happening, so we need
         // to negate the total score
-        writeln!(file, "Total score:,{}", -outputs.get_cost_of_arcs_from_nodes(&task_ids))?;
+        writeln!(file, "Total score:,{}",
+                 -outputs.get_cost_of_arcs_from_nodes(&self.task_names))?;
 
         // record task names
-        let task_names = outputs.get_task_names(&task_ids);
-        writeln!(file, "{}", task_names.join(","))?;
+        writeln!(file, "{}", self.task_names.join(","))?;
 
         // create vector of strings that shows worker assignments for each task
-        let assignments = self.get_assignments(&task_ids, outputs);
+        let assignments = self.get_assignments(outputs);
 
         // write each line of workers assigned
         for assignment in assignments {
@@ -205,18 +209,22 @@ impl CsvWriter {
     }
 
     /// Create a vector of comma-delimited strings from the worker-task assignments in a network
-    fn get_assignments(&self, task_order: &Vec<usize>, outputs: &Network) -> Vec<String> {
+    fn get_assignments(&self, outputs: &Network) -> Vec<String> {
         let worker_assignments = outputs.get_worker_assignments();
         let max_size = worker_assignments.values()
             .map(Vec::len)
             .max().unwrap();
         let mut assignments: Vec<Vec<String>> = vec![vec![]; max_size];
-        for task in task_order {
-            for (row, worker) in worker_assignments.get(task).unwrap().iter().enumerate() {
-                assignments[row].push(outputs.get_worker_name_from_id(*worker));
+        for task in &self.task_names {
+            for (row, worker) in worker_assignments
+                .get(task).unwrap()
+                .iter().enumerate() {
+                assignments[row].push((*worker).clone());
             }
             if worker_assignments.get(task).unwrap().len() < max_size {
-                for empty_assignment in assignments.iter_mut().take(max_size).skip(worker_assignments.get(task).unwrap().len()) {
+                for empty_assignment in assignments.iter_mut()
+                    .take(max_size)
+                    .skip(worker_assignments.get(task).unwrap().len()) {
                     empty_assignment.push("".to_string());
                 }
             }
