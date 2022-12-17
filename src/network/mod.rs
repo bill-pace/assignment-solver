@@ -117,7 +117,10 @@ impl Network {
         }
 
         // Connections from the source are unassigned workers - loop until they're all assigned.
-        while nodes[0].get_num_connections() > 0 {
+        let source = unsafe {
+            nodes.get_unchecked(0)
+        };
+        while source.get_num_connections() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
             // the assignment is infeasible
             let path = self.find_shortest_path()?;
@@ -223,13 +226,21 @@ impl Network {
             // for each node updated in the last iteration, see if any of its existing connections
             // result in a shorter path to any other node than what's been found so far
             for node_id in &nodes_to_search_from {
-                let node = &nodes[*node_id];
+                let node = unsafe {
+                    nodes.get_unchecked(*node_id)
+                };
                 for connected_arc_id in node.get_connections().iter() {
-                    let connected_arc = &arcs[*connected_arc_id];
+                    let connected_arc = unsafe {
+                        arcs.get_unchecked(*connected_arc_id)
+                    };
                     let connected_node_id = connected_arc.get_end_node_id();
                     // calculate distances
-                    let cur_dist = distances[connected_node_id];
-                    let dist_to_here = distances[*node_id];
+                    let cur_dist = unsafe {
+                        *distances.get_unchecked(connected_node_id)
+                    };
+                    let dist_to_here = unsafe {
+                        *distances.get_unchecked(*node_id)
+                    };
                     let dist_from_here = connected_arc.get_cost();
 
                     if dist_to_here + dist_from_here < cur_dist {
@@ -262,8 +273,10 @@ impl Network {
 
         // construct path backwards; unwrap won't panic because the vector is never empty
         let mut path = vec![1];
-        while let Some(node_id) = predecessors[*path.last().unwrap()] {
-            path.push(node_id);
+        while let Some(node_id) = unsafe {
+            predecessors.get_unchecked(*path.last().unwrap())
+        } {
+            path.push(*node_id);
         }
 
         // confirm the last node found was the source - if not, there's a bug
@@ -279,15 +292,20 @@ impl Network {
         {
             puffin::profile_function!();
         }
-
+        let arcs = self.arcs.borrow();
         for node_pair in path.windows(2) {
-            let arc = self.find_connecting_arc_id(node_pair[0], node_pair[1])
+            let arc_id = self.find_connecting_arc_id(node_pair[0], node_pair[1])
                 .expect("Can't find an arc that's part of the path!");
-            let arc_inverted = self.arcs.borrow()[arc].push_flow(self.min_flow_satisfied.get());
+            let arc = unsafe {
+                arcs.get_unchecked(arc_id)
+            };
+            let arc_inverted = arc.push_flow(self.min_flow_satisfied.get());
             if arc_inverted {
                 let nodes = self.nodes.borrow();
-                nodes[node_pair[0]].remove_connection(arc);
-                nodes[node_pair[1]].add_connection(arc);
+                unsafe {
+                    nodes.get_unchecked(node_pair[0]).remove_connection(arc_id);
+                    nodes.get_unchecked(node_pair[1]).add_connection(arc_id);
+                }
             }
         }
     }
@@ -296,6 +314,10 @@ impl Network {
     /// requirement satisfied, and allows further assignment of all remaining workers up to the max
     /// for each task. This method resets all arcs touching the sink to account for the
     /// corresponding changes in the residual network.
+    /// This method uses unsafe blocks to skip bounds checks when indexing self.nodes. For the
+    /// unsafe blocks to work properly, there must be no way to destroy the sink node, no way to
+    /// reorder nodes within self.nodes, and no way to create an arc that starts and/or ends at an
+    /// invalid node.
     fn reset_arcs_for_second_phase(&self) {
         #[cfg(feature = "profiling")]
         {
@@ -303,14 +325,27 @@ impl Network {
         }
 
         let nodes = self.nodes.borrow();
-        let connections = nodes[1].get_connections().clone();
+        let arcs = self.arcs.borrow();
+        let connections = unsafe {
+            // Required invariant is that self.nodes contains at least two nodes, which is satisfied
+            // in Network::new() - the node at index 1 is the sink.
+            nodes.get_unchecked(1).get_connections().clone()
+        };
         self.min_flow_satisfied.set(true);
         for connection in connections {
-            let arc = &self.arcs.borrow()[connection];
+            let arc = unsafe {
+                arcs.get_unchecked(connection)
+            };
             let arc_inverted = arc.update_for_second_phase();
             if arc_inverted {
-                nodes[arc.get_end_node_id()].remove_connection(connection);
-                nodes[arc.get_start_node_id()].add_connection(connection);
+                unsafe {
+                    // Required invariant is that the arc's start and end node IDs are both valid
+                    // node IDs. Satisfied in Network::add_worker and Network::add_task by only
+                    // creating arcs between valid nodes, and maintained by the Arc interface not
+                    // providing a way to change which nodes any given arc connects.
+                    nodes.get_unchecked(arc.get_end_node_id()).remove_connection(connection);
+                    nodes.get_unchecked(arc.get_start_node_id()).add_connection(connection);
+                }
             }
         }
     }
@@ -322,8 +357,16 @@ impl Network {
             puffin::profile_function!();
         }
 
-        self.nodes.borrow()[start_node_id].get_connections().iter().copied()
-            .find(|c| self.arcs.borrow()[*c].get_end_node_id() == end_node_id)
+        let nodes = self.nodes.borrow();
+        let arcs = self.arcs.borrow();
+        let node = unsafe {
+            nodes.get_unchecked(start_node_id)
+        };
+        let id = node.get_connections().iter().copied()
+            .find(|c| unsafe {
+                arcs.get_unchecked(*c).get_end_node_id() == end_node_id
+            });
+        id
     }
 
     /// Find the total cost of all arcs leaving the node specified by the given ID.
