@@ -9,7 +9,7 @@ use crate::io::FileType;
 use crate::ui::{CurrentStatus, Status};
 use crate::ui::solver::Solver;
 
-pub struct SolverGui {
+pub(super) struct SolverGui {
     infile: Option<String>,
     outfile: Option<String>,
     cur_status: Arc<CurrentStatus>

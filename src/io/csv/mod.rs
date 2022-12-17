@@ -29,7 +29,7 @@ mod test;
 /// as 0 rather than as infinite. Affinities can be any 32-bit floating-point value, including
 /// negative numbers, and if left blank will represent an unacceptable assignment (e.g. the worker
 /// cannot do the corresponding task).
-pub struct CsvReader {
+pub(super) struct CsvReader {
     // keep list of task IDs to pair up with affinities when reading worker data
     tasks: RefCell<Vec<usize>>
 }
@@ -169,7 +169,7 @@ impl Reader for CsvReader {
 ///      Worker 2 Name  |  Worker 4 Name  |  Worker 6 Name  |  Worker 8 Name  | ...
 ///     ----------------|-----------------|-----------------|-----------------|----
 ///     ...
-pub struct CsvWriter {
+pub(super) struct CsvWriter {
 
 }
 

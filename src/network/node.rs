@@ -4,7 +4,7 @@ use std::cell::{Ref, RefCell};
 /// Each node has an ID number sequentially generated on construction, and a collection of other
 /// ID numbers corresponding to the nodes that it connects to via existing arcs. Note that since
 /// this network is directed, the connected nodes do not point back to this node.
-pub struct Node {
+pub(super) struct Node {
     connected_arcs: RefCell<Vec<usize>>
 }
 

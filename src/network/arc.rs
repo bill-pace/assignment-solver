@@ -8,7 +8,7 @@ use std::fmt;
 /// actually represents the flow that must be present in that arc at the point when execution can
 /// move from the "satisfy minimum assignment" phase to the "assign all remaining workers" phase.
 #[derive(Debug)]
-pub struct Arc {
+pub(super) struct Arc {
     start_node: Cell<usize>,
     end_node: Cell<usize>,
     cost: Cell<f32>,

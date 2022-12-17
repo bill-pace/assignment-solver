@@ -4,7 +4,7 @@ use crate::io::{FileType, Reader, reader_factory, Writer, writer_factory};
 use crate::network::Network;
 use crate::ui::{CurrentStatus, Status};
 
-pub struct Solver {
+pub(super) struct Solver {
     reader: RefCell<Box<dyn Reader>>,
     writer: RefCell<Box<dyn Writer>>,
     network: Network
