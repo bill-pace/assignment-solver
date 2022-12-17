@@ -50,8 +50,7 @@ impl Network {
         new_network
     }
 
-    /// Add a new node to the network representing a task, and connect that node to the sink. Return
-    /// the task's ID number to look it back up after assignment is complete.
+    /// Add a new node to the network representing a task, and connect that node to the sink.
     pub fn add_task(&self, name: String, min_workers: usize, max_workers: usize) {
         let task_id = self.add_node();
 
@@ -71,8 +70,8 @@ impl Network {
     }
 
     /// Add a new node to the network representing a worker, connect the source to the new node, and
-    /// connect the new node to all tasks the worker can perform. As with `add_task`, return the
-    /// worker node's ID.
+    /// connect the new node to all tasks the worker can perform (i.e. those listed in the
+    /// task_affinity vector).
     pub fn add_worker(&self, name: String, task_affinity: &Vec<(&String, f32)>) {
         let worker_id = self.add_node();
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
