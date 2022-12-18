@@ -9,9 +9,16 @@ pub(super) struct Node {
 }
 
 impl Node {
-    /// Create new Node with given ID
+    /// Create new Node
     pub fn new() -> Node {
         Node { connected_arcs: RefCell::new(Vec::new()) }
+    }
+
+    /// Create a new Node whose connected_arcs vector has the given capacity
+    pub fn with_capacity(cap: usize) -> Node {
+        Node {
+            connected_arcs: RefCell::new(Vec::with_capacity(cap)),
+        }
     }
 
     /// Get number of connected arcs

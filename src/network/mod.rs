@@ -46,14 +46,15 @@ impl Network {
             task_names: RefCell::new(HashMap::new()),
             worker_names: RefCell::new(HashMap::new())
         };
-        new_network.add_node(); // flow source, id 0
-        new_network.add_node(); // flow sink, id 1
+        new_network.add_node(node::Node::new()); // flow source, id 0
+        new_network.add_node(node::Node::new()); // flow sink, id 1
         new_network
     }
 
     /// Add a new node to the network representing a task, and connect that node to the sink.
     pub fn add_task(&self, name: Rc<String>, min_workers: usize, max_workers: usize) {
-        let task_id = self.add_node();
+        let task_node = node::Node::with_capacity(max_workers);
+        let task_id = self.add_node(task_node);
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
         self.max_flow_amount.set(self.max_flow_amount.get() + max_workers);
@@ -74,12 +75,15 @@ impl Network {
     /// connect the new node to all tasks the worker can perform (i.e. those listed in the
     /// task_affinity vector).
     pub fn add_worker(&self, name: Rc<String>, task_affinity: &Vec<(&Rc<String>, f32)>) {
-        let worker_id = self.add_node();
+        let task_names = self.task_names.borrow();
+        let num_tasks = task_names.len();
+
+        let worker_node = node::Node::with_capacity(num_tasks);
+        let worker_id = self.add_node(worker_node);
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
         // the flow bound is 1 for both phases of the min cost augmentation
         self.add_arc(0, worker_id, 0.0, 1, 1);
 
-        let task_names = self.task_names.borrow();
         // connect the worker to each task they can perform, using their affinity as the cost of the
         // new arc - flow bound stays 1
         for affinity in task_affinity {
@@ -123,7 +127,7 @@ impl Network {
         };
         while source.get_num_connections() > 0 {
             // find shortest path from source to sink - if no path found, then notify the user that
-            // the assignment is infeasible
+            // the assignment is infeasible. note that the path returned is in reverse order.
             let path = self.find_shortest_path()?;
 
             // path found, push flow and increment the amount of flow
@@ -179,9 +183,8 @@ impl Network {
         assignments
     }
 
-    /// Create a new Node and add it to the network's collection of nodes.
-    fn add_node(&self) -> usize {
-        let new_node = node::Node::new();
+    /// Take ownership of a Node and add it to the network's collection of nodes.
+    fn add_node(&self, new_node: node::Node) -> usize {
         let mut nodes = self.nodes.borrow_mut();
         let node_id = nodes.len();
         nodes.push(new_node);
@@ -283,7 +286,6 @@ impl Network {
         // confirm the last node found was the source - if not, there's a bug
         assert_eq!(*path.last().unwrap(), 0, "Path does not start at source!");
 
-        path.reverse();
         Ok(path)
     }
 
@@ -295,7 +297,7 @@ impl Network {
         }
         let arcs = self.arcs.borrow();
         for node_pair in path.windows(2) {
-            let arc_id = self.find_connecting_arc_id(node_pair[0], node_pair[1])
+            let arc_id = self.find_connecting_arc_id(node_pair[1], node_pair[0])
                 .expect("Can't find an arc that's part of the path!");
             let arc = unsafe {
                 arcs.get_unchecked(arc_id)
@@ -304,8 +306,8 @@ impl Network {
             if arc_inverted {
                 let nodes = self.nodes.borrow();
                 unsafe {
-                    nodes.get_unchecked(node_pair[0]).remove_connection(arc_id);
-                    nodes.get_unchecked(node_pair[1]).add_connection(arc_id);
+                    nodes.get_unchecked(node_pair[1]).remove_connection(arc_id);
+                    nodes.get_unchecked(node_pair[0]).add_connection(arc_id);
                 }
             }
         }

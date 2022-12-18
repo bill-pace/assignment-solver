@@ -16,7 +16,7 @@ fn test_push_flow() {
     assert_eq!(network.nodes.borrow()[node_b_id].get_num_connections(), 0);
     assert_eq!(network.arcs.borrow()[network.nodes.borrow()[node_a_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
                node_b_id);
-    network.push_flow_down_path(&vec![0, 1]);
+    network.push_flow_down_path(&vec![1, 0]);
     assert_eq!(network.nodes.borrow()[node_a_id].get_num_connections(), 0);
     assert_eq!(network.nodes.borrow()[node_b_id].get_num_connections(), 1);
     assert_eq!(network.arcs.borrow()[network.nodes.borrow()[node_b_id].get_first_connected_arc_id().unwrap()].get_end_node_id(),
@@ -51,11 +51,12 @@ fn test_shortest_path() {
     assert_eq!(network.arcs.borrow().len(), 8);
     let mut path = network.find_shortest_path().unwrap();
     assert_eq!(path.len(), 4);
-    assert_eq!(*path.first().unwrap(), 0);
-    assert_eq!(*path.last().unwrap(), 1);
-    assert_eq!(network.get_path_cost(&path), 1.9_f32);
-    network.push_flow_down_path(&path);
+    assert_eq!(*path.first().unwrap(), 1);
+    assert_eq!(*path.last().unwrap(), 0);
     path.reverse();
+    assert_eq!(network.get_path_cost(&path), 1.9_f32);
+    path.reverse();
+    network.push_flow_down_path(&path);
     for node_pair in path.windows(2) {
         network.find_connecting_arc_id(node_pair[0], node_pair[1])
             .expect(&*format!("Arc between {} and {} not inverted!", node_pair[1], node_pair[0]));
