@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::iter::zip;
+use std::rc::Rc;
 use std::str::FromStr;
 use crate::io::{Reader, Writer};
 use crate::network::Network;
@@ -31,7 +32,7 @@ mod test;
 /// cannot do the corresponding task).
 pub(super) struct CsvReader {
     // keep list of task IDs to pair up with affinities when reading worker data
-    tasks: RefCell<Vec<String>>,
+    tasks: RefCell<Vec<Rc<String>>>,
 }
 
 impl CsvReader {
@@ -108,8 +109,8 @@ impl CsvReader {
                                                "Maximum cannot be less than minimum!".to_string()));
             }
 
-            let task_name = name.trim().to_string();
-            self.tasks.borrow_mut().push(task_name.clone());
+            let task_name = Rc::new(name.trim().to_string());
+            self.tasks.borrow_mut().push(Rc::clone(&task_name));
             network.add_task(task_name, lower, upper);
         }
         Ok(())
@@ -144,7 +145,7 @@ impl CsvReader {
             }
         }
 
-        network.add_worker(worker_name, &affinities);
+        network.add_worker(Rc::new(worker_name), &affinities);
 
         Ok(())
     }
@@ -157,7 +158,7 @@ impl Reader for CsvReader {
         self.process_file(BufReader::new(f), network)
     }
 
-    fn clone_task_names(&self) -> Vec<String> {
+    fn clone_task_names(&self) -> Vec<Rc<String>> {
         self.tasks.borrow().clone()
     }
 }
@@ -175,12 +176,12 @@ impl Reader for CsvReader {
 ///     ----------------|-----------------|-----------------|-----------------|----
 ///     ...
 pub(super) struct CsvWriter {
-    task_names: Vec<String>,
+    task_names: Vec<Rc<String>>,
 }
 
 impl CsvWriter {
     /// Create a new `CsvWriter`
-    pub fn new(task_names: Vec<String>) -> CsvWriter {
+    pub fn new(task_names: Vec<Rc<String>>) -> CsvWriter {
         CsvWriter {
             task_names,
         }
@@ -195,7 +196,11 @@ impl CsvWriter {
                  -outputs.get_cost_of_arcs_from_nodes(&self.task_names))?;
 
         // record task names
-        writeln!(file, "{}", self.task_names.join(","))?;
+        writeln!(file, "{}",
+                 self.task_names.iter()
+                     .map(|tn| String::clone(tn))
+                     .collect::<Vec<String>>()
+                     .join(","))?;
 
         // create vector of strings that shows worker assignments for each task
         let assignments = self.get_assignments(outputs);
@@ -219,7 +224,7 @@ impl CsvWriter {
             for (row, worker) in worker_assignments
                 .get(task).unwrap()
                 .iter().enumerate() {
-                assignments[row].push((*worker).clone());
+                assignments[row].push(String::clone(&worker));
             }
             if worker_assignments.get(task).unwrap().len() < max_size {
                 for empty_assignment in assignments.iter_mut()

@@ -12,6 +12,7 @@ mod feasibility_error;
 mod test;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 use crate::network::feasibility_error::FeasibilityError;
 use crate::ui::{CurrentStatus, Status};
@@ -24,8 +25,8 @@ pub(crate) struct Network {
     num_tasks: Cell<usize>,
     nodes: RefCell<Vec<node::Node>>,
     arcs: RefCell<Vec<arc::Arc>>,
-    task_names: RefCell<HashMap<String, usize>>,
-    worker_names: RefCell<HashMap<usize, String>>
+    task_names: RefCell<HashMap<Rc<String>, usize>>,
+    worker_names: RefCell<HashMap<usize, Rc<String>>>,
 }
 
 impl Network {
@@ -51,7 +52,7 @@ impl Network {
     }
 
     /// Add a new node to the network representing a task, and connect that node to the sink.
-    pub fn add_task(&self, name: String, min_workers: usize, max_workers: usize) {
+    pub fn add_task(&self, name: Rc<String>, min_workers: usize, max_workers: usize) {
         let task_id = self.add_node();
 
         self.min_flow_amount.set(self.min_flow_amount.get() + min_workers);
@@ -72,7 +73,7 @@ impl Network {
     /// Add a new node to the network representing a worker, connect the source to the new node, and
     /// connect the new node to all tasks the worker can perform (i.e. those listed in the
     /// task_affinity vector).
-    pub fn add_worker(&self, name: String, task_affinity: &Vec<(&String, f32)>) {
+    pub fn add_worker(&self, name: Rc<String>, task_affinity: &Vec<(&Rc<String>, f32)>) {
         let worker_id = self.add_node();
         // connect source to worker - no cost here, and each worker can be assigned exactly once so
         // the flow bound is 1 for both phases of the min cost augmentation
@@ -149,7 +150,7 @@ impl Network {
     /// Get cost of flow from arcs leaving the supplied node(s). If the supplied node IDs are the
     /// task node IDs, this method will return -1 times the total cost of worker assignments, since
     /// assigning a worker to a task involves negating the corresponding arc's cost.
-    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &[String]) -> f32 {
+    pub fn get_cost_of_arcs_from_nodes(&self, nodes: &[Rc<String>]) -> f32 {
         let task_names = self.task_names.borrow();
         nodes.iter()
             .flat_map(|node| {
@@ -161,7 +162,7 @@ impl Network {
     }
 
     /// Create and return a `HashMap` of which workers are assigned to which tasks
-    pub fn get_worker_assignments(&self) -> HashMap<String, Vec<String>> {
+    pub fn get_worker_assignments(&self) -> HashMap<Rc<String>, Vec<Rc<String>>> {
         let mut assignments = HashMap::new();
         let tasks= self.task_names.borrow();
         for task in tasks.keys() {

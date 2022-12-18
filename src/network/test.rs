@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::network::Network;
 use crate::ui::CurrentStatus;
 
@@ -29,14 +30,19 @@ fn test_push_flow() {
 fn test_shortest_path() {
     // setup
     let network = Network::new();
-    let task_names: Vec<String> = vec!["Task 1".into(), "Task 2".into()];
+    let task_names = vec![Rc::new("Task 1".into()),
+                                       Rc::new("Task 2".into())];
+    let worker_names = vec![
+        Rc::new("Worker 1".into()),
+        Rc::new("Worker 2".into()),
+    ];
     // add task 1
-    network.add_task(task_names[0].clone(), 1, 1);
-    network.add_task(task_names[1].clone(),1, 1);
-    network.add_worker("Worker 1".into(),
+    network.add_task(Rc::clone(&task_names[0]), 1, 1);
+    network.add_task(Rc::clone(&task_names[1]),1, 1);
+    network.add_worker(Rc::clone(&worker_names[0]),
                        &vec![(&task_names[0], 2.5_f32),
                              (&task_names[1], 3.0_f32)]);
-    network.add_worker("Worker 2".into(),
+    network.add_worker(Rc::clone(&worker_names[1]),
                        &vec![(&task_names[0], 2.6_f32),
                              (&task_names[1], 1.9_f32)]);
 
@@ -60,25 +66,30 @@ fn test_shortest_path() {
 fn test_min_cost_augmentation() {
     // setup
     let network = Network::new();
-    let task_names: Vec<String> = vec!["Task 1".into(), "Task 2".into(), "Task 3".into(),
-                          "Task 4".into(), "Task 5".into()];
-    let worker_names: Vec<String> = vec![
-        "Worker 1".to_string(),
-        "Worker 2".to_string(),
-        "Worker 3".to_string(),
-        "Worker 4".to_string(),
-        "Worker 5".to_string(),
-        "Worker 6".to_string(),
-        "Worker 7".to_string(),
-        "Worker 8".to_string(),
-        "Worker 9".to_string(),
-        "Worker 10".to_string(),
+    let task_names = vec![
+        Rc::new("Task 1".into()),
+        Rc::new("Task 2".into()),
+        Rc::new("Task 3".into()),
+        Rc::new("Task 4".into()),
+        Rc::new("Task 5".into()),
     ];
-    network.add_task(task_names[0].clone(), 1, 2);
-    network.add_task(task_names[1].clone(), 2, 2);
-    network.add_task(task_names[2].clone(), 0, 2);
-    network.add_task(task_names[3].clone(), 2, 3);
-    network.add_task(task_names[4].clone(), 1, 2);
+    let worker_names = vec![
+        Rc::new("Worker 1".to_string()),
+        Rc::new("Worker 2".to_string()),
+        Rc::new("Worker 3".to_string()),
+        Rc::new("Worker 4".to_string()),
+        Rc::new("Worker 5".to_string()),
+        Rc::new("Worker 6".to_string()),
+        Rc::new("Worker 7".to_string()),
+        Rc::new("Worker 8".to_string()),
+        Rc::new("Worker 9".to_string()),
+        Rc::new("Worker 10".to_string()),
+    ];
+    network.add_task(Rc::clone(&task_names[0]), 1, 2);
+    network.add_task(Rc::clone(&task_names[1]), 2, 2);
+    network.add_task(Rc::clone(&task_names[2]), 0, 2);
+    network.add_task(Rc::clone(&task_names[3]), 2, 3);
+    network.add_task(Rc::clone(&task_names[4]), 1, 2);
     network.add_worker(worker_names[0].clone(),
                        &vec![(&task_names[0], 3.0),
                              (&task_names[1], 4.0), (&task_names[2], 1.5),

@@ -7,6 +7,7 @@
 //! on a chosen item in the `FileType` enum. The enum should have one entry for every filetype
 //! supported by implementations of the Reader and Writer traits.
 
+use std::rc::Rc;
 use crate::io::csv::{CsvReader, CsvWriter};
 use crate::network::Network;
 
@@ -23,7 +24,7 @@ pub enum FileType {
 pub(crate) trait Reader {
     fn read_file(&mut self, filename: String, network: &Network) -> std::io::Result<()>;
 
-    fn clone_task_names(&self) -> Vec<String>;
+    fn clone_task_names(&self) -> Vec<Rc<String>>;
 }
 
 /// A Writer takes a Network struct, extracts its worker-task assignments, and attempts to write the
@@ -42,7 +43,7 @@ pub(crate) fn reader_factory(file_type: FileType) -> impl Reader {
 
 /// Create a struct that implements the Writer trait based on the selected file type from the
 /// `FileType` enum
-pub(crate) fn writer_factory(file_type: FileType, task_names: Vec<String>) -> impl Writer {
+pub(crate) fn writer_factory(file_type: FileType, task_names: Vec<Rc<String>>) -> impl Writer {
     match file_type {
         FileType::Csv => CsvWriter::new(task_names)
     }
